@@ -93,8 +93,8 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .board-header h2{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--accent)}
 .month-tab{padding:4px 12px;border:1px solid var(--border);border-radius:20px;background:var(--card);cursor:pointer;font-size:0.78rem;font-family:'Noto Sans JP',sans-serif;transition:all .2s}
 .month-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.board-cols{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px}
-.board-col{min-width:230px;max-width:250px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;flex-shrink:0}
+.board-cols{display:flex;flex-direction:column;gap:8px;padding-bottom:10px}
+.board-col{width:100%;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
 .board-col-header{padding:9px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
 .col-color{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .col-title{font-weight:700;font-size:0.83rem;flex:1}
@@ -104,7 +104,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .board-col-header:hover .col-del-btn{opacity:.6}
 .board-col-body{overflow:hidden;transition:max-height .3s ease;max-height:1000px}
 .board-col-body.collapsed{max-height:0}
-.subtask-row{display:flex;align-items:center;gap:8px;padding:7px 13px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;font-size:0.8rem}
+.subtask-row{display:flex;align-items:center;gap:8px;padding:8px 13px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;font-size:0.82rem}
 .subtask-row:hover{background:rgba(0,0,0,0.015)}
 .subtask-row.selected{background:rgba(92,124,106,0.09)}
 .subtask-check{width:14px;height:14px;accent-color:var(--accent);flex-shrink:0}
@@ -213,99 +213,150 @@ document.addEventListener('keydown', e=>{
 function defaultData(){
   return {
     projects:[
-      // ---- 今年の目標 ----
+      // ====== 今年の目標 ======
       {
-        id:'goal1', title:'花札制作', color:'#c0605a', deadline:'2026-08-31', duration:0, memo:'シマエナガ花札、8月完成目標',
+        id:'goal1',title:'花札制作（8月完成目標）',color:'#c0605a',deadline:'2026-08-31',duration:0,memo:'シマエナガ花札48枚',collapsed:false,
         subtasks:[
-          {id:'g1s1',text:'テーマ・構図の設計（12ヶ月分）',done:false,startDate:'2026-06-07',endDate:'2026-06-09',duration:360,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g1s2',text:'48枚分のイラスト制作',done:false,startDate:'2026-06-10',endDate:'2026-07-15',duration:1680,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g1s3',text:'カード裏面・枠デザイン',done:false,startDate:'2026-07-16',endDate:'2026-07-25',duration:240,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g1s4',text:'印刷所・素材の選定・入稿',done:false,startDate:'2026-07-26',endDate:'2026-08-05',duration:180,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g1s5',text:'試作品確認・修正',done:false,startDate:'2026-08-06',endDate:'2026-08-20',duration:240,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g1s6',text:'完成・納品',done:false,startDate:'2026-08-21',endDate:'2026-08-31',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          // 6月前半：テーマ・構図設計（平日6h×5日=30h/週、週末2h×2=4h）
+          {id:'g1s1',text:'1〜4月のテーマ決め（桜・燕・菖蒲・藤）',done:false,startDate:'2026-06-09',endDate:'2026-06-09',duration:90,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s2',text:'5〜8月のテーマ決め（菖蒲・牡丹・萩・芒）',done:false,startDate:'2026-06-10',endDate:'2026-06-10',duration:90,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s3',text:'9〜12月のテーマ決め（菊・紅葉・柳・桐）',done:false,startDate:'2026-06-11',endDate:'2026-06-11',duration:90,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s4',text:'全12ヶ月の構図ラフスケッチ（1〜4月）',done:false,startDate:'2026-06-12',endDate:'2026-06-12',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s5',text:'全12ヶ月の構図ラフスケッチ（5〜8月）',done:false,startDate:'2026-06-13',endDate:'2026-06-13',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s6',text:'全12ヶ月の構図ラフスケッチ（9〜12月）',done:false,startDate:'2026-06-16',endDate:'2026-06-16',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          // イラスト制作（1日2枚ペース・各90分）
+          {id:'g1s7',text:'イラスト制作：1月・2月（松・梅）',done:false,startDate:'2026-06-17',endDate:'2026-06-17',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s8',text:'イラスト制作：3月・4月（桜・藤）',done:false,startDate:'2026-06-18',endDate:'2026-06-18',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s9',text:'イラスト制作：5月・6月（菖蒲・牡丹）',done:false,startDate:'2026-06-19',endDate:'2026-06-19',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s10',text:'イラスト制作：7月・8月（萩・芒）',done:false,startDate:'2026-06-20',endDate:'2026-06-20',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s11',text:'イラスト制作：9月・10月（菊・紅葉）',done:false,startDate:'2026-06-23',endDate:'2026-06-23',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s12',text:'イラスト制作：11月・12月（柳・桐）',done:false,startDate:'2026-06-24',endDate:'2026-06-24',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s13',text:'タン・カス・タネの図柄を全月分描く（前半）',done:false,startDate:'2026-06-25',endDate:'2026-06-27',duration:360,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s14',text:'タン・カス・タネの図柄を全月分描く（後半）',done:false,startDate:'2026-06-30',endDate:'2026-07-02',duration:360,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s15',text:'光札（役札）4枚のデザイン',done:false,startDate:'2026-07-03',endDate:'2026-07-04',duration:240,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s16',text:'全48枚のデジタル仕上げ・色調整（前半）',done:false,startDate:'2026-07-07',endDate:'2026-07-10',duration:360,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s17',text:'全48枚のデジタル仕上げ・色調整（後半）',done:false,startDate:'2026-07-13',endDate:'2026-07-17',duration:360,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s18',text:'カード裏面デザイン案3パターン作成',done:false,startDate:'2026-07-20',endDate:'2026-07-21',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s19',text:'枠・余白・フォントの統一調整',done:false,startDate:'2026-07-22',endDate:'2026-07-23',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s20',text:'印刷所3社比較・素材・サイズ検討',done:false,startDate:'2026-07-24',endDate:'2026-07-25',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s21',text:'入稿データ作成・入稿',done:false,startDate:'2026-07-28',endDate:'2026-07-29',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s22',text:'試作品チェック・修正リストアップ',done:false,startDate:'2026-08-10',endDate:'2026-08-11',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s23',text:'修正データ再入稿・完成確認',done:false,startDate:'2026-08-17',endDate:'2026-08-18',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g1s24',text:'完成・納品・SNS告知',done:false,startDate:'2026-08-28',endDate:'2026-08-31',duration:60,memo:'',notes:'',checks:[],carryover:false},
         ]
       },
       {
-        id:'goal2', title:'シマエナガお茶会ボードゲーム制作', color:'#7a6a9a', deadline:'2026-12-31', duration:0, memo:'',
+        id:'goal2',title:'シマエナガお茶会ボードゲーム',color:'#7a6a9a',deadline:'2026-12-31',duration:0,memo:'',collapsed:true,
         subtasks:[
-          {id:'g2s1',text:'ゲームルール設計',done:false,startDate:'2026-09-01',endDate:'2026-09-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g2s2',text:'イラスト・コンポーネント制作',done:false,startDate:'2026-10-01',endDate:'2026-11-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g2s3',text:'テストプレイ・修正',done:false,startDate:'2026-12-01',endDate:'2026-12-31',duration:0,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g2s1',text:'ゲームのコンセプト・対象人数・時間を決める',done:false,startDate:'2026-09-01',endDate:'2026-09-05',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g2s2',text:'ゲームルール初稿を書く',done:false,startDate:'2026-09-08',endDate:'2026-09-12',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g2s3',text:'カード・コマなどコンポーネントリスト作成',done:false,startDate:'2026-09-15',endDate:'2026-09-19',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g2s4',text:'仮素材で試作・1人テストプレイ',done:false,startDate:'2026-09-22',endDate:'2026-09-26',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g2s5',text:'カードイラスト制作（前半）',done:false,startDate:'2026-10-01',endDate:'2026-10-17',duration:600,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g2s6',text:'カードイラスト制作（後半）',done:false,startDate:'2026-10-20',endDate:'2026-11-07',duration:600,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g2s7',text:'ルールブックデザイン・印刷',done:false,startDate:'2026-11-10',endDate:'2026-11-21',duration:360,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g2s8',text:'複数人でテストプレイ・修正',done:false,startDate:'2026-12-01',endDate:'2026-12-15',duration:240,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g2s9',text:'完成・告知',done:false,startDate:'2026-12-21',endDate:'2026-12-31',duration:60,memo:'',notes:'',checks:[],carryover:false},
         ]
       },
       {
-        id:'goal3', title:'LINEスタンプ', color:'#5a9a6a', deadline:'2026-12-31', duration:0, memo:'',
+        id:'goal3',title:'LINEスタンプ',color:'#5a9a6a',deadline:'2026-09-30',duration:0,memo:'',collapsed:true,
         subtasks:[
-          {id:'g3s1',text:'テーマ・キャラクター決め',done:false,startDate:'2026-06-01',endDate:'2026-06-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g3s2',text:'スタンプイラスト制作（40枚）',done:false,startDate:'2026-07-01',endDate:'2026-08-31',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g3s3',text:'申請・審査',done:false,startDate:'2026-09-01',endDate:'2026-09-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g3s1',text:'スタンプのテーマ・キャラクターを決める',done:false,startDate:'2026-07-01',endDate:'2026-07-03',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g3s2',text:'使いたいセリフ・シーン40個リストアップ',done:false,startDate:'2026-07-04',endDate:'2026-07-05',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g3s3',text:'スタンプ1〜10枚目のラフ・仕上げ',done:false,startDate:'2026-07-07',endDate:'2026-07-11',duration:300,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g3s4',text:'スタンプ11〜20枚目のラフ・仕上げ',done:false,startDate:'2026-07-14',endDate:'2026-07-18',duration:300,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g3s5',text:'スタンプ21〜30枚目のラフ・仕上げ',done:false,startDate:'2026-07-21',endDate:'2026-07-25',duration:300,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g3s6',text:'スタンプ31〜40枚目のラフ・仕上げ',done:false,startDate:'2026-07-28',endDate:'2026-08-01',duration:300,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g3s7',text:'サイズ調整・背景透過・ファイル書き出し',done:false,startDate:'2026-08-04',endDate:'2026-08-07',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g3s8',text:'LINE申請・審査待ち',done:false,startDate:'2026-08-10',endDate:'2026-09-30',duration:30,memo:'',notes:'',checks:[],carryover:false},
         ]
       },
       {
-        id:'goal4', title:'ホームページ制作', color:'#5a7fa0', deadline:'2026-12-31', duration:0, memo:'',
+        id:'goal4',title:'ホームページ制作',color:'#5a7fa0',deadline:'2026-10-31',duration:0,memo:'',collapsed:true,
         subtasks:[
-          {id:'g4s1',text:'構成・デザイン設計',done:false,startDate:'2026-06-01',endDate:'2026-06-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g4s2',text:'コンテンツ制作・実装',done:false,startDate:'2026-07-01',endDate:'2026-09-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g4s3',text:'公開・運用開始',done:false,startDate:'2026-10-01',endDate:'2026-10-31',duration:0,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g4s1',text:'載せたいコンテンツ・ページ構成を紙に書き出す',done:false,startDate:'2026-08-03',endDate:'2026-08-04',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g4s2',text:'参考サイト5つ集めてデザインイメージ固める',done:false,startDate:'2026-08-05',endDate:'2026-08-06',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g4s3',text:'トップページのデザイン作成',done:false,startDate:'2026-08-17',endDate:'2026-08-21',duration:300,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g4s4',text:'作品紹介ページのデザイン・写真撮影',done:false,startDate:'2026-08-24',endDate:'2026-08-28',duration:300,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g4s5',text:'プロフィール・お問い合わせページ作成',done:false,startDate:'2026-09-01',endDate:'2026-09-05',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g4s6',text:'スマホ表示の確認・修正',done:false,startDate:'2026-09-08',endDate:'2026-09-12',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g4s7',text:'公開・SNSで告知',done:false,startDate:'2026-10-01',endDate:'2026-10-03',duration:60,memo:'',notes:'',checks:[],carryover:false},
         ]
       },
       {
-        id:'goal5', title:'刺繍の勉強と販売（100万円目標）', color:'#d4856a', deadline:'2026-12-31', duration:0, memo:'年間売上100万円目標',
+        id:'goal5',title:'刺繍販売（年間100万円目標）',color:'#d4856a',deadline:'2026-12-31',duration:0,memo:'月8〜9万円売上目標',collapsed:true,
         subtasks:[
-          {id:'g5s1',text:'技術習得・作品制作',done:false,startDate:'2026-06-01',endDate:'2026-08-31',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g5s2',text:'販売開始（minne・Creema等）',done:false,startDate:'2026-07-01',endDate:'2026-12-31',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g5s3',text:'SNS発信・集客',done:false,startDate:'2026-06-01',endDate:'2026-12-31',duration:0,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g5s1',text:'売りたい刺繍作品のジャンルを3つ決める',done:false,startDate:'2026-06-09',endDate:'2026-06-09',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g5s2',text:'minneとCreemaのアカウント開設・プロフィール設定',done:false,startDate:'2026-06-10',endDate:'2026-06-11',duration:90,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g5s3',text:'作品写真の撮り方を調べて試し撮り',done:false,startDate:'2026-06-12',endDate:'2026-06-12',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g5s4',text:'試作品1点制作・出品',done:false,startDate:'2026-06-13',endDate:'2026-06-14',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g5s5',text:'作品5点制作・写真撮影・出品（6月目標）',done:false,startDate:'2026-06-16',endDate:'2026-06-28',duration:600,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g5s6',text:'Instagramに制作過程投稿（週2〜3回）',done:false,startDate:'2026-06-09',endDate:'2026-06-30',duration:30,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g5s7',text:'7月：作品8点追加出品',done:false,startDate:'2026-07-01',endDate:'2026-07-31',duration:900,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g5s8',text:'8月：秋向け作品制作・出品',done:false,startDate:'2026-08-01',endDate:'2026-08-31',duration:900,memo:'',notes:'',checks:[],carryover:false},
         ]
       },
       {
-        id:'goal6', title:'YouTube毎月投稿', color:'#a05050', deadline:'2026-12-31', duration:0, memo:'毎月最低1本',
+        id:'goal6',title:'YouTube毎月投稿',color:'#a05050',deadline:'2026-12-31',duration:0,memo:'毎月1本以上',collapsed:true,
         subtasks:[
-          {id:'g6s1',text:'6月動画：企画・撮影・投稿',done:false,startDate:'2026-06-01',endDate:'2026-06-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g6s2',text:'7月動画：企画・撮影・投稿',done:false,startDate:'2026-07-01',endDate:'2026-07-31',duration:0,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s1',text:'6月動画：テーマ・内容を決める',done:false,startDate:'2026-06-09',endDate:'2026-06-10',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s2',text:'6月動画：撮影（制作風景・作業まとめ）',done:false,startDate:'2026-06-16',endDate:'2026-06-17',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s3',text:'6月動画：編集・サムネ作成・投稿',done:false,startDate:'2026-06-23',endDate:'2026-06-25',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s4',text:'7月動画：テーマ決め・撮影・編集・投稿',done:false,startDate:'2026-07-14',endDate:'2026-07-25',duration:360,memo:'',notes:'',checks:[],carryover:false},
         ]
       },
-      // ---- 現在のタスク ----
+      // ====== 現在のお仕事タスク ======
       {
-        id:'now1', title:'レクサス パンフレット制作', color:'#4a7a9a', deadline:'2026-06-30', duration:0, memo:'修正指示待ち中',
+        id:'now1',title:'レクサス パンフレット',color:'#4a7a9a',deadline:'2026-06-30',duration:0,memo:'修正指示待ち中',collapsed:false,
         subtasks:[
-          {id:'n1s1',text:'修正指示確認・対応',done:false,startDate:'2026-06-07',endDate:'2026-06-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'n1s2',text:'最終納品',done:false,startDate:'2026-06-25',endDate:'2026-06-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
-        ]
-      },
-      {
-        id:'now2', title:'TANZOパンフレット制作', color:'#6a8a5a', deadline:'2026-06-30', duration:0, memo:'修正指示待ち中',
-        subtasks:[
-          {id:'n2s1',text:'修正指示確認・対応',done:false,startDate:'2026-06-07',endDate:'2026-06-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'n2s2',text:'最終納品',done:false,startDate:'2026-06-25',endDate:'2026-06-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n1s1',text:'修正指示が来たらメモに記録する',done:false,startDate:'2026-06-09',endDate:'2026-06-10',duration:30,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n1s2',text:'修正内容を反映する',done:false,startDate:'2026-06-11',endDate:'2026-06-20',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n1s3',text:'修正確認・微調整',done:false,startDate:'2026-06-22',endDate:'2026-06-24',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n1s4',text:'最終データ書き出し・納品',done:false,startDate:'2026-06-25',endDate:'2026-06-28',duration:60,memo:'',notes:'',checks:[],carryover:false},
         ]
       },
       {
-        id:'now3', title:'制作依頼：ネームプレート（ゆきのとさん）', color:'#b07aa0', deadline:'2026-06-14', duration:0, memo:'来週まで',
+        id:'now2',title:'TANZOパンフレット',color:'#6a8a5a',deadline:'2026-06-30',duration:0,memo:'修正指示待ち中',collapsed:false,
         subtasks:[
-          {id:'n3s1',text:'デザイン確認・制作開始',done:false,startDate:'2026-06-07',endDate:'2026-06-10',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'n3s2',text:'仕上げ・お届け',done:false,startDate:'2026-06-11',endDate:'2026-06-14',duration:0,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n2s1',text:'修正指示が来たらメモに記録する',done:false,startDate:'2026-06-09',endDate:'2026-06-10',duration:30,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n2s2',text:'修正内容を反映する',done:false,startDate:'2026-06-11',endDate:'2026-06-20',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n2s3',text:'最終データ書き出し・納品',done:false,startDate:'2026-06-25',endDate:'2026-06-28',duration:60,memo:'',notes:'',checks:[],carryover:false},
         ]
       },
       {
-        id:'now4', title:'制作依頼：社長さん誕プレ', color:'#c09040', deadline:'2026-06-30', duration:0, memo:'今月中',
+        id:'now3',title:'制作依頼：ネームプレート（ゆきのとさん）',color:'#b07aa0',deadline:'2026-06-14',duration:0,memo:'来週まで',collapsed:false,
         subtasks:[
-          {id:'n4s1',text:'アイデア・素材準備',done:false,startDate:'2026-06-07',endDate:'2026-06-15',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'n4s2',text:'制作・ラッピング',done:false,startDate:'2026-06-16',endDate:'2026-06-25',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'n4s3',text:'お渡し',done:false,startDate:'2026-06-26',endDate:'2026-06-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n3s1',text:'デザインイメージをゆきのとさんに確認',done:false,startDate:'2026-06-09',endDate:'2026-06-09',duration:30,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n3s2',text:'素材・文字・レイアウトを決めて下書き',done:false,startDate:'2026-06-10',endDate:'2026-06-10',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n3s3',text:'制作・仕上げ',done:false,startDate:'2026-06-11',endDate:'2026-06-12',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n3s4',text:'写真を撮ってお客様に確認・お渡し',done:false,startDate:'2026-06-13',endDate:'2026-06-14',duration:30,memo:'',notes:'',checks:[],carryover:false},
         ]
       },
       {
-        id:'now5', title:'制作依頼：ももちゃんへプレゼント', color:'#d4786a', deadline:'2026-06-30', duration:0, memo:'今月中',
+        id:'now4',title:'制作依頼：社長さん誕プレ',color:'#c09040',deadline:'2026-06-30',duration:0,memo:'今月中',collapsed:false,
         subtasks:[
-          {id:'n5s1',text:'制作',done:false,startDate:'2026-06-07',endDate:'2026-06-25',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'n5s2',text:'お渡し',done:false,startDate:'2026-06-25',endDate:'2026-06-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n4s1',text:'プレゼントのアイデアを3つ考える',done:false,startDate:'2026-06-09',endDate:'2026-06-09',duration:30,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n4s2',text:'必要な素材・材料を揃える',done:false,startDate:'2026-06-10',endDate:'2026-06-11',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n4s3',text:'制作（本体）',done:false,startDate:'2026-06-16',endDate:'2026-06-18',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n4s4',text:'ラッピング・メッセージカード作成',done:false,startDate:'2026-06-19',endDate:'2026-06-19',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n4s5',text:'お渡し',done:false,startDate:'2026-06-25',endDate:'2026-06-30',duration:15,memo:'',notes:'',checks:[],carryover:false},
         ]
       },
       {
-        id:'now6', title:'制作依頼：はるなちゃんへプレゼント', color:'#d4a060', deadline:'2026-06-30', duration:0, memo:'今月中',
+        id:'now5',title:'制作依頼：ももちゃんへプレゼント',color:'#d4786a',deadline:'2026-06-30',duration:0,memo:'今月中',collapsed:false,
         subtasks:[
-          {id:'n6s1',text:'制作',done:false,startDate:'2026-06-07',endDate:'2026-06-25',duration:0,memo:'',notes:'',checks:[],carryover:false},
-          {id:'n6s2',text:'お渡し',done:false,startDate:'2026-06-25',endDate:'2026-06-30',duration:0,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n5s1',text:'何を作るか決める・材料確認',done:false,startDate:'2026-06-09',endDate:'2026-06-09',duration:30,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n5s2',text:'制作',done:false,startDate:'2026-06-17',endDate:'2026-06-20',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n5s3',text:'ラッピング・お渡し',done:false,startDate:'2026-06-25',endDate:'2026-06-30',duration:30,memo:'',notes:'',checks:[],carryover:false},
+        ]
+      },
+      {
+        id:'now6',title:'制作依頼：はるなちゃんへプレゼント',color:'#d4a060',deadline:'2026-06-30',duration:0,memo:'今月中',collapsed:false,
+        subtasks:[
+          {id:'n6s1',text:'何を作るか決める・材料確認',done:false,startDate:'2026-06-09',endDate:'2026-06-09',duration:30,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n6s2',text:'制作',done:false,startDate:'2026-06-21',endDate:'2026-06-24',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'n6s3',text:'ラッピング・お渡し',done:false,startDate:'2026-06-25',endDate:'2026-06-30',duration:30,memo:'',notes:'',checks:[],carryover:false},
         ]
       },
     ],
@@ -314,7 +365,6 @@ function defaultData(){
     charImg:'',
     boardMonths:['2026-06'],
   };
-}
 
 let DB = load();
 let currentView = 'today';
@@ -398,15 +448,19 @@ function renderToday(){
   const dateStr=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
   const times=['午前','午後','夜','終日'];
 
-  // 今日のサブタスク提案
+  // 今日が期間内のサブタスクを自動でブロックに追加
   const blockedSubIds=todayBlocks.filter(b=>b.sub).map(b=>b.sub);
-  const suggestSubs=[];
   DB.projects.forEach(p=>{
     p.subtasks.forEach(s=>{
-      if(!s.done&&s.startDate<=today&&s.endDate>=today&&!blockedSubIds.includes(s.id))
-        suggestSubs.push({...s,projColor:p.color,projTitle:p.title,projId:p.id});
+      if(!s.done&&s.startDate<=today&&s.endDate>=today&&!blockedSubIds.includes(s.id)){
+        const h=new Date().getHours();
+        const time=h<12?'午前':h<17?'午後':'夜';
+        DB.blocks.push({id:'b'+Date.now()+Math.random().toString(36).slice(2),date:today,time,title:s.text,sub:s.id,done:false,duration:s.duration,projId:p.id,projColor:p.color});
+        blockedSubIds.push(s.id);
+      }
     });
   });
+  save(DB,false);
 
   const hour=new Date().getHours();
   const greetList=hour<12?['おはよう！今日もいい一日にしよう！','朝だよ！一緒にがんばろう！']:
@@ -446,10 +500,7 @@ function renderToday(){
           <div class="circle-sub-text">合計：${totalLabel}</div>
         </div>
       </div>
-      ${suggestSubs.length>0?`<div style="background:rgba(92,124,106,0.07);border:1px solid var(--accent2);border-radius:10px;padding:9px 13px;font-size:0.78rem">
-        💡 今日できるタスク：${suggestSubs.map(s=>`<span style="background:${s.projColor};color:#fff;border-radius:4px;padding:1px 6px;font-size:0.7rem;margin:1px">${s.text}</span>`).join(' ')}
-        <button onclick="addSuggestedToBlock()" style="margin-left:6px;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:2px 9px;font-size:0.72rem;cursor:pointer">追加</button>
-      </div>`:''}
+
     </div>
   </div>`;
 
