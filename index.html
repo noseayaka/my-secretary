@@ -77,7 +77,13 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .cal-cell.today-cell{border-color:var(--accent);border-width:2px}
 .cal-date-num{font-size:0.72rem;font-weight:700;color:var(--muted);font-family:'DM Mono',monospace}
 .cal-cell.today-cell .cal-date-num{color:var(--accent)}
-.cal-task-mini{font-size:0.58rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:1px 3px;border-radius:3px;color:#fff}
+.cal-task-mini{font-size:0.58rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:1px 4px;border-radius:3px;color:#fff;position:relative;z-index:1}
+.cal-task-mini.span-start{border-radius:3px 0 0 3px;margin-right:0}
+.cal-task-mini.span-mid{border-radius:0;margin:2px 0 0 0;padding-left:3px;opacity:0.85}
+.cal-task-mini.span-mid .span-text{visibility:hidden}
+.cal-task-mini.span-end{border-radius:0 3px 3px 0;margin-left:0;opacity:0.85}
+.cal-task-mini.span-end .span-text{visibility:hidden}
+.cal-task-mini.span-single{border-radius:3px}
 /* カレンダー下部締め切り */
 #cal-bottom{margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
 #cal-bottom h3{font-size:0.83rem;font-weight:700;color:var(--accent);margin-bottom:10px}
@@ -664,15 +670,22 @@ function renderCalendar(){
   DB.projects.forEach(p=>{
     if(p.deadline){
       if(!tasksByDate[p.deadline]) tasksByDate[p.deadline]=[];
-      tasksByDate[p.deadline].push({text:'〆'+p.title,color:p.color,done:false});
+      tasksByDate[p.deadline].push({text:'〆'+p.title,color:p.color,single:true,startDate:p.deadline,endDate:p.deadline});
     }
     p.subtasks.filter(s=>!s.done).forEach(s=>{
       if(!s.startDate||!s.endDate) return;
+      const isSpan = s.startDate !== s.endDate;
       const start=new Date(s.startDate), end=new Date(s.endDate);
       for(let dd=new Date(start);dd<=end;dd.setDate(dd.getDate()+1)){
         const ds=fmtDate(dd);
         if(!tasksByDate[ds]) tasksByDate[ds]=[];
-        tasksByDate[ds].push({text:s.text,color:p.color});
+        const isStart = ds===s.startDate;
+        const isEnd = ds===s.endDate;
+        tasksByDate[ds].push({
+          text:s.text, color:p.color,
+          spanType: !isSpan?'single': isStart?'start': isEnd?'end':'mid',
+          startDate:s.startDate, endDate:s.endDate
+        });
       }
     });
   });
@@ -687,7 +700,11 @@ function renderCalendar(){
     const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const isToday=ds===today;
     const dayTasks=tasksByDate[ds]||[];
-    const mini=dayTasks.slice(0,2).map(t=>`<div class="cal-task-mini" style="background:${t.color}">${t.text}</div>`).join('');
+    const mini=dayTasks.slice(0,3).map(t=>{
+      const cls = t.spanType||'single';
+      const showText = cls==='single'||cls==='start';
+      return `<div class="cal-task-mini span-${cls}" style="background:${t.color}"><span class="span-text">${showText?t.text:''}</span></div>`;
+    }).join('');
     cells+=`<div class="cal-cell${isToday?' today-cell':''}" onclick="openCalDay('${ds}')">
       <div class="cal-date-num">${day}</div>${mini}
     </div>`;
