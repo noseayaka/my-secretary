@@ -164,6 +164,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <button class="nav-btn" onclick="showView('calendar')">カレンダー</button>
   <button class="nav-btn" onclick="showView('alltasks')">全タスク</button>
   <button class="nav-btn" onclick="showView('monthly')">月別</button>
+  <button class="nav-btn" onclick="showView('commissions')">制作依頼</button>
   <button class="nav-btn" onclick="showView('settings')">設定</button>
   <span class="spacer"></span>
   <button id="undo-btn" onclick="doUndo()" title="元に戻す (Ctrl+Z)">↩ 元に戻す</button>
@@ -173,6 +174,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div id="calendar-view" style="display:none"></div>
   <div id="alltasks-view" style="display:none"></div>
   <div id="monthly-view" style="display:none"></div>
+  <div id="commissions-view" style="display:none"></div>
   <div id="settings-view" style="display:none"></div>
 </div>
 <div id="detail-panel">
@@ -425,17 +427,18 @@ function updateCharImg(){
 // ===================== ビュー切り替え =====================
 function showView(v){
   currentView=v;
-  ['today','calendar','alltasks','monthly','settings'].forEach(x=>{
+  ['today','calendar','alltasks','monthly','commissions','settings'].forEach(x=>{
     document.getElementById(x+'-view').style.display=x===v?'':'none';
   });
   document.querySelectorAll('.nav-btn').forEach((b,i)=>{
-    b.classList.toggle('active',['today','calendar','alltasks','monthly','settings'][i]===v);
+    b.classList.toggle('active',['today','calendar','alltasks','monthly','commissions','settings'][i]===v);
   });
   closeDetail();
   if(v==='today') renderToday();
   if(v==='calendar') renderCalendar();
   if(v==='alltasks') renderAllTasks();
   if(v==='monthly') renderMonthly();
+  if(v==='commissions') renderCommissions();
   if(v==='settings') renderSettings();
 }
 
@@ -835,9 +838,10 @@ function toggleSubtask(projId,subId,checked){
   if(s) s.done=checked;
   save(DB);
   if(checked) praiseSpeech();
-  // 現在のビューに応じて再描画
+  // 全関連ビュー再描画
   if(currentView==='alltasks') renderAllTasks();
   else if(currentView==='monthly') renderMonthly();
+  else if(currentView==='commissions') renderCommissions();
   else renderBoard();
 }
 function deleteSubtask(projId,subId){
@@ -912,53 +916,107 @@ function updateCheck(i,v){ if(selectedSubtask) selectedSubtask.checks[i].done=v;
 function updateCheckText(i,v){ if(selectedSubtask) selectedSubtask.checks[i].text=v; }
 function deleteCheck(i){ if(selectedSubtask){ selectedSubtask.checks.splice(i,1); openDetail(selectedProjId,selectedSubtask.id); } }
 
-// ===================== 全タスクビュー =====================
-function renderAllTasks(){
-  const el=document.getElementById('alltasks-view');
-  let html='<div style="margin-bottom:14px"><h2 style=\'font-family:\'DM Serif Display\',serif;font-size:1.25rem;color:var(--accent)\'>全タスク一覧</h2></div>';
-  
-  DB.projects.forEach(p=>{
-    const isCollapsed=p.collapsed||false;
-    const done=p.subtasks.filter(s=>s.done).length;
-    const total=p.subtasks.length;
-    const pct=total>0?Math.round(done/total*100):0;
-    
-    html+=`<div class="board-col" style="margin-bottom:10px;max-width:100%">
-      <div class="board-col-header" style="cursor:pointer" onclick="toggleAllTasksCollapse('${p.id}')">
-        <div class="col-color" style="background:${p.color}"></div>
-        <span class="col-title">${p.title}</span>
-        <span style="font-size:0.72rem;color:var(--muted);margin-right:8px">${done}/${total} (${pct}%)</span>
-        <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-right:8px">
-          <div style="width:${pct}%;height:100%;background:${p.color};border-radius:3px;transition:width .4s"></div>
-        </div>
-        <button class="col-del-btn" onclick="event.stopPropagation();deleteProject('${p.id}')" title="削除">🗑</button>
-        <span class="col-toggle${isCollapsed?' collapsed':''}">▼</span>
+
+// ===================== 共通：プロジェクトリスト描画 =====================
+function buildProjectHtml(p, viewKey){
+  const isCollapsed = p['collapsed_'+viewKey] || false;
+  const done = p.subtasks.filter(s=>s.done).length;
+  const total = p.subtasks.length;
+  const pct = total>0 ? Math.round(done/total*100) : 0;
+  const isArchived = total>0 && done===total;
+
+  return `<div class="board-col" style="margin-bottom:10px;${isArchived?'opacity:0.6':''}">
+    <div class="board-col-header" style="cursor:pointer" onclick="toggleViewCollapse('${p.id}','${viewKey}')">
+      <div class="col-color" style="background:${p.color}"></div>
+      <span class="col-title">${p.title}${isArchived?' ✅':''}</span>
+      <span style="font-size:0.72rem;color:var(--muted);margin-right:8px">${done}/${total} (${pct}%)</span>
+      <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-right:8px">
+        <div style="width:${pct}%;height:100%;background:${p.color};border-radius:3px;transition:width .4s"></div>
       </div>
-      <div class="board-col-body${isCollapsed?' collapsed':''}">
-        ${p.subtasks.map(s=>{
-          const isSelected=selectedSubtask&&selectedSubtask.id===s.id&&selectedProjId===p.id;
-          return `<div class="subtask-row${isSelected?' selected':''}" onclick="openDetail('${p.id}','${s.id}')">
-            <input type="checkbox" class="subtask-check"${s.done?' checked':''} onclick="event.stopPropagation()" onchange="toggleSubtask('${p.id}','${s.id}',this.checked)">
-            <span class="subtask-name${s.done?' done':''}">
-              ${s.text}
-              ${s.startDate?`<span style="font-size:0.65rem;color:var(--muted);margin-left:6px">${s.startDate.slice(5).replace('-','/')}〜${s.endDate?s.endDate.slice(5).replace('-','/'):''}</span>`:''}
-            </span>
-            ${s.duration?`<span class="subtask-dur">${Math.floor(s.duration/60)?Math.floor(s.duration/60)+'h':''}${s.duration%60?s.duration%60+'m':''}</span>`:''}
-            <button class="subtask-delete" onclick="event.stopPropagation();deleteSubtask('${p.id}','${s.id}')" title="削除">🗑</button>
-          </div>`;
-        }).join('')}
-        <button class="add-subtask-btn" onclick="openAddSubtask('${p.id}')">＋ タスクを追加</button>
-      </div>
-    </div>`;
-  });
-  
-  el.innerHTML=html;
+      <button class="col-del-btn" onclick="event.stopPropagation();deleteProject('${p.id}')" title="削除">🗑</button>
+      <span class="col-toggle${isCollapsed?' collapsed':''}">▼</span>
+    </div>
+    <div class="board-col-body${isCollapsed?' collapsed':''}">
+      ${p.subtasks.map(s=>{
+        const sel = selectedSubtask&&selectedSubtask.id===s.id&&selectedProjId===p.id;
+        return `<div class="subtask-row${sel?' selected':''}" onclick="openDetail('${p.id}','${s.id}')">
+          <input type="checkbox" class="subtask-check"${s.done?' checked':''} onclick="event.stopPropagation()" onchange="toggleSubtask('${p.id}','${s.id}',this.checked)">
+          <span class="subtask-name${s.done?' done':''}">
+            ${s.text}
+            ${s.startDate?`<span style="font-size:0.65rem;color:var(--muted);margin-left:6px">${s.startDate.slice(5).replace('-','/')}〜${s.endDate?s.endDate.slice(5).replace('-','/'):''}</span>`:''}
+          </span>
+          ${s.duration?`<span class="subtask-dur">${Math.floor(s.duration/60)?Math.floor(s.duration/60)+'h':''}${s.duration%60?s.duration%60+'m':''}</span>`:''}
+          <button class="subtask-delete" onclick="event.stopPropagation();deleteSubtask('${p.id}','${s.id}')" title="削除">🗑</button>
+        </div>`;
+      }).join('')}
+      <button class="add-subtask-btn" onclick="openAddSubtask('${p.id}')">＋ タスクを追加</button>
+    </div>
+  </div>`;
 }
 
-function toggleAllTasksCollapse(projId){
-  const p=DB.projects.find(x=>x.id===projId);
-  if(p) p.collapsed=!p.collapsed;
-  save(DB); renderAllTasks();
+function toggleViewCollapse(projId, viewKey){
+  const p = DB.projects.find(x=>x.id===projId);
+  if(p) p['collapsed_'+viewKey] = !p['collapsed_'+viewKey];
+  save(DB);
+  if(viewKey==='all') renderAllTasks();
+  else if(viewKey==='commissions') renderCommissions();
+  else renderMonthly();
+}
+
+// ===================== 制作依頼ビュー =====================
+function renderCommissions(){
+  const el = document.getElementById('commissions-view');
+  // 制作依頼プロジェクト（タイトルに「依頼」「パンフ」「レクサス」「TANZO」を含むもの）
+  const isCommission = p => /依頼|パンフ|レクサス|TANZO/.test(p.title);
+
+  const active = DB.projects.filter(p => isCommission(p) && !isAllDone(p));
+  const archived = DB.projects.filter(p => isCommission(p) && isAllDone(p));
+
+  let html = '<div style="margin-bottom:14px"><h2 style=\'font-family:\'DM Serif Display\',serif;font-size:1.25rem;color:var(--accent)\'>制作依頼</h2></div>';
+
+  if(active.length===0 && archived.length===0){
+    html += '<div style="color:var(--muted);padding:20px">制作依頼のタスクはありません</div>';
+  } else {
+    active.forEach(p => { html += buildProjectHtml(p,'commissions'); });
+    if(archived.length>0){
+      html += buildArchiveSection(archived, 'commissions');
+    }
+  }
+  el.innerHTML = html;
+}
+
+// ===================== アーカイブセクション =====================
+function isAllDone(p){ return p.subtasks.length>0 && p.subtasks.every(s=>s.done); }
+
+function buildArchiveSection(projects, viewKey){
+  const isOpen = window['archive_open_'+viewKey] || false;
+  const rows = projects.map(p=>buildProjectHtml(p,viewKey)).join('');
+  return `<div style="margin-top:20px;border-top:1px dashed var(--border);padding-top:14px">
+    <div style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:10px" onclick="toggleArchive('${viewKey}')">
+      <span style="font-size:0.85rem;color:var(--muted);font-weight:600">📦 アーカイブ（完了済み ${projects.length}件）</span>
+      <span style="color:var(--muted);font-size:0.8rem">${isOpen?'▲':'▼'}</span>
+    </div>
+    <div style="display:${isOpen?'block':'none'}" id="archive-section-${viewKey}">${rows}</div>
+  </div>`;
+}
+
+function toggleArchive(viewKey){
+  window['archive_open_'+viewKey] = !window['archive_open_'+viewKey];
+  if(viewKey==='all') renderAllTasks();
+  else if(viewKey==='commissions') renderCommissions();
+  else renderMonthly();
+}
+
+// ===================== 全タスクビュー =====================
+function renderAllTasks(){
+  const el = document.getElementById('alltasks-view');
+  const active = DB.projects.filter(p => !isAllDone(p));
+  const archived = DB.projects.filter(p => isAllDone(p));
+
+  let html = '<div style="margin-bottom:14px"><h2 style=\'font-family:\'DM Serif Display\',serif;font-size:1.25rem;color:var(--accent)\'>全タスク一覧</h2></div>';
+  active.forEach(p => { html += buildProjectHtml(p,'all'); });
+  if(archived.length>0) html += buildArchiveSection(archived,'all');
+  el.innerHTML = html;
 }
 
 // ===================== 月別ビュー =====================
@@ -988,7 +1046,7 @@ function renderMonthly(){
     const isCollapsed=p['collapsed_monthly_'+activeMonth]||false;
     
     colsHtml+=`<div class="board-col" style="margin-bottom:10px">
-      <div class="board-col-header" style="cursor:pointer" onclick="toggleMonthlyCollapse('${p.id}')">
+      <div class="board-col-header" style="cursor:pointer" onclick="toggleViewCollapse('${p.id}','monthly_${activeMonth}')">
         <div class="col-color" style="background:${p.color}"></div>
         <span class="col-title">${p.title}</span>
         <span style="font-size:0.72rem;color:var(--muted);margin-right:6px">${subs.filter(s=>s.done).length}/${subs.length}</span>
@@ -1027,14 +1085,7 @@ function switchMonth(m){
   renderMonthly();
 }
 
-function toggleMonthlyCollapse(projId){
-  const p=DB.projects.find(x=>x.id===projId);
-  if(p){
-    const key='collapsed_monthly_'+activeMonth;
-    p[key]=!p[key];
-  }
-  save(DB); renderMonthly();
-}
+
 
 // ===================== 設定 =====================
 function renderSettings(){
