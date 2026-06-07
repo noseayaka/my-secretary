@@ -423,23 +423,26 @@ function showView(v){
 function renderToday(){
   const el=document.getElementById('today-view');
   const today=todayStr();
-  const todayBlocks=DB.blocks.filter(b=>b.date===today);
-
-  // 今日が範囲のサブタスクの合計時間を分母に
-  let totalMin=0;
+  // 今日が期間内のサブタスクを自動でブロックに追加（まだ追加されていないもの）
+  const existingSubIds=DB.blocks.filter(b=>b.date===today&&b.sub).map(b=>b.sub);
+  let added=false;
   DB.projects.forEach(p=>{
     p.subtasks.forEach(s=>{
-      if(!s.done&&s.startDate<=today&&s.endDate>=today&&s.duration>0) totalMin+=s.duration;
+      if(!s.done&&s.startDate<=today&&s.endDate>=today&&!existingSubIds.includes(s.id)){
+        DB.blocks.push({id:'b'+Date.now()+Math.random().toString(36).slice(2),date:today,time:'午前',title:s.text,sub:s.id,done:false,duration:s.duration||0,projId:p.id,projColor:p.color});
+        existingSubIds.push(s.id);
+        added=true;
+      }
     });
   });
-  // ブロックも含める
-  todayBlocks.forEach(b=>{ if(b.duration>0) totalMin+=b.duration; });
-  // 重複を避けるため、ブロックのsub付きは除外してサブタスク側のみカウント
-  // 実際は今日のブロックの完了時間を分子に
+  if(added) save(DB,false);
+
+  const todayBlocks=DB.blocks.filter(b=>b.date===today);
+
+  // 合計時間・完了時間
   const doneMin=todayBlocks.filter(b=>b.done).reduce((s,b)=>s+(b.duration||0),0);
-  // 分母: 今日ブロックの総時間（0ならサブタスク合計）
   const blockTotal=todayBlocks.reduce((s,b)=>s+(b.duration||0),0);
-  const denomMin=blockTotal>0?blockTotal:totalMin;
+  const denomMin=blockTotal>0?blockTotal:0;
   const pct=denomMin>0?Math.round(doneMin/denomMin*100):0;
   const r=26, circ=2*Math.PI*r;
   const offset=circ*(1-pct/100);
@@ -448,31 +451,16 @@ function renderToday(){
   const dateStr=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
   const times=['午前','午後','夜','終日'];
 
-  // 今日が期間内のサブタスクを自動でブロックに追加
-  const blockedSubIds=todayBlocks.filter(b=>b.sub).map(b=>b.sub);
-  DB.projects.forEach(p=>{
-    p.subtasks.forEach(s=>{
-      if(!s.done&&s.startDate<=today&&s.endDate>=today&&!blockedSubIds.includes(s.id)){
-        const h=new Date().getHours();
-        const time=h<12?'午前':h<17?'午後':'夜';
-        DB.blocks.push({id:'b'+Date.now()+Math.random().toString(36).slice(2),date:today,time,title:s.text,sub:s.id,done:false,duration:s.duration,projId:p.id,projColor:p.color});
-        blockedSubIds.push(s.id);
-      }
-    });
-  });
-  save(DB,false);
-
   const hour=new Date().getHours();
   const greetList=hour<12?['おはよう！今日もいい一日にしよう！','朝だよ！一緒にがんばろう！']:
     hour<17?['こんにちは！午後も一緒に頑張ろう！','お昼過ぎ。休憩した？']:
     ['お疲れ様！今日もよくがんばったね！','夜も無理しないでね🌙'];
   const greetMsg=greetList[Math.floor(Math.random()*greetList.length)];
 
-  // 合計時間テキスト（分母）
   const totalH=Math.floor(denomMin/60), totalM=denomMin%60;
   const doneH=Math.floor(doneMin/60), doneM=doneMin%60;
-  const totalLabel=denomMin>0?`${totalH}h${totalM}m`:'--';
-  const doneLabel=`${doneH}h${doneM}m`;
+  const totalLabel=denomMin>0?`${totalH}h${String(totalM).padStart(2,'0')}m`:'--';
+  const doneLabel=`${doneH}h${String(doneM).padStart(2,'0')}m`;
 
   let html=`
   <div class="today-top">
