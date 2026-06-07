@@ -162,7 +162,8 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <span class="logo">🐾 タスク秘書</span>
   <button class="nav-btn active" onclick="showView('today')">今日</button>
   <button class="nav-btn" onclick="showView('calendar')">カレンダー</button>
-  <button class="nav-btn" onclick="showView('board')">ボード</button>
+  <button class="nav-btn" onclick="showView('alltasks')">全タスク</button>
+  <button class="nav-btn" onclick="showView('monthly')">月別</button>
   <button class="nav-btn" onclick="showView('settings')">設定</button>
   <span class="spacer"></span>
   <button id="undo-btn" onclick="doUndo()" title="元に戻す (Ctrl+Z)">↩ 元に戻す</button>
@@ -170,7 +171,8 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 <div id="main">
   <div id="today-view"></div>
   <div id="calendar-view" style="display:none"></div>
-  <div id="board-view" style="display:none"></div>
+  <div id="alltasks-view" style="display:none"></div>
+  <div id="monthly-view" style="display:none"></div>
   <div id="settings-view" style="display:none"></div>
 </div>
 <div id="detail-panel">
@@ -423,16 +425,17 @@ function updateCharImg(){
 // ===================== ビュー切り替え =====================
 function showView(v){
   currentView=v;
-  ['today','calendar','board','settings'].forEach(x=>{
+  ['today','calendar','alltasks','monthly','settings'].forEach(x=>{
     document.getElementById(x+'-view').style.display=x===v?'':'none';
   });
   document.querySelectorAll('.nav-btn').forEach((b,i)=>{
-    b.classList.toggle('active',['today','calendar','board','settings'][i]===v);
+    b.classList.toggle('active',['today','calendar','alltasks','monthly','settings'][i]===v);
   });
   closeDetail();
   if(v==='today') renderToday();
   if(v==='calendar') renderCalendar();
-  if(v==='board') renderBoard();
+  if(v==='alltasks') renderAllTasks();
+  if(v==='monthly') renderMonthly();
   if(v==='settings') renderSettings();
 }
 
@@ -598,14 +601,15 @@ function renderCalendar(){
   const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
   const daysInPrev=new Date(calYear,calMonth,0).getDate();
 
-  // タスク期間のみ（ブロックは非表示）
+  // タスク期間のみ（未完了のみ表示）
   const tasksByDate={};
   DB.projects.forEach(p=>{
     if(p.deadline){
       if(!tasksByDate[p.deadline]) tasksByDate[p.deadline]=[];
-      tasksByDate[p.deadline].push({text:'〆'+p.title,color:p.color});
+      tasksByDate[p.deadline].push({text:'〆'+p.title,color:p.color,done:false});
     }
-    p.subtasks.forEach(s=>{
+    p.subtasks.filter(s=>!s.done).forEach(s=>{
+      if(!s.startDate||!s.endDate) return;
       const start=new Date(s.startDate), end=new Date(s.endDate);
       for(let dd=new Date(start);dd<=end;dd.setDate(dd.getDate()+1)){
         const ds=fmtDate(dd);
@@ -675,8 +679,8 @@ function calMove(dir){
 function openCalDay(ds){
   const subtasks=[];
   DB.projects.forEach(p=>{
-    p.subtasks.forEach(s=>{
-      if(s.startDate<=ds&&s.endDate>=ds) subtasks.push({...s,projColor:p.color,projTitle:p.title});
+    p.subtasks.filter(s=>!s.done).forEach(s=>{
+      if(s.startDate&&s.endDate&&s.startDate<=ds&&s.endDate>=ds) subtasks.push({...s,projColor:p.color,projTitle:p.title});
     });
   });
   const deadlines=DB.projects.filter(p=>p.deadline===ds);
@@ -789,7 +793,10 @@ function toggleSubtask(projId,subId,checked){
   if(s) s.done=checked;
   save(DB);
   if(checked) praiseSpeech();
-  renderBoard();
+  // 現在のビューに応じて再描画
+  if(currentView==='alltasks') renderAllTasks();
+  else if(currentView==='monthly') renderMonthly();
+  else renderBoard();
 }
 function deleteSubtask(projId,subId){
   if(!confirm('このタスクを削除しますか？')) return;
@@ -862,6 +869,130 @@ function addCheck(){ if(!selectedSubtask) return; selectedSubtask.checks.push({t
 function updateCheck(i,v){ if(selectedSubtask) selectedSubtask.checks[i].done=v; }
 function updateCheckText(i,v){ if(selectedSubtask) selectedSubtask.checks[i].text=v; }
 function deleteCheck(i){ if(selectedSubtask){ selectedSubtask.checks.splice(i,1); openDetail(selectedProjId,selectedSubtask.id); } }
+
+// ===================== 全タスクビュー =====================
+function renderAllTasks(){
+  const el=document.getElementById('alltasks-view');
+  let html='<div style="margin-bottom:14px"><h2 style=\'font-family:\'DM Serif Display\',serif;font-size:1.25rem;color:var(--accent)\'>全タスク一覧</h2></div>';
+  
+  DB.projects.forEach(p=>{
+    const isCollapsed=p.collapsed||false;
+    const done=p.subtasks.filter(s=>s.done).length;
+    const total=p.subtasks.length;
+    const pct=total>0?Math.round(done/total*100):0;
+    
+    html+=`<div class="board-col" style="margin-bottom:10px;max-width:100%">
+      <div class="board-col-header" style="cursor:pointer" onclick="toggleAllTasksCollapse('${p.id}')">
+        <div class="col-color" style="background:${p.color}"></div>
+        <span class="col-title">${p.title}</span>
+        <span style="font-size:0.72rem;color:var(--muted);margin-right:8px">${done}/${total} (${pct}%)</span>
+        <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-right:8px">
+          <div style="width:${pct}%;height:100%;background:${p.color};border-radius:3px;transition:width .4s"></div>
+        </div>
+        <button class="col-del-btn" onclick="event.stopPropagation();deleteProject('${p.id}')" title="削除">🗑</button>
+        <span class="col-toggle${isCollapsed?' collapsed':''}">▼</span>
+      </div>
+      <div class="board-col-body${isCollapsed?' collapsed':''}">
+        ${p.subtasks.map(s=>{
+          const isSelected=selectedSubtask&&selectedSubtask.id===s.id&&selectedProjId===p.id;
+          return `<div class="subtask-row${isSelected?' selected':''}" onclick="openDetail('${p.id}','${s.id}')">
+            <input type="checkbox" class="subtask-check"${s.done?' checked':''} onclick="event.stopPropagation()" onchange="toggleSubtask('${p.id}','${s.id}',this.checked)">
+            <span class="subtask-name${s.done?' done':''}">
+              ${s.text}
+              ${s.startDate?`<span style="font-size:0.65rem;color:var(--muted);margin-left:6px">${s.startDate.slice(5).replace('-','/')}〜${s.endDate?s.endDate.slice(5).replace('-','/'):''}</span>`:''}
+            </span>
+            ${s.duration?`<span class="subtask-dur">${Math.floor(s.duration/60)?Math.floor(s.duration/60)+'h':''}${s.duration%60?s.duration%60+'m':''}</span>`:''}
+            <button class="subtask-delete" onclick="event.stopPropagation();deleteSubtask('${p.id}','${s.id}')" title="削除">🗑</button>
+          </div>`;
+        }).join('')}
+        <button class="add-subtask-btn" onclick="openAddSubtask('${p.id}')">＋ タスクを追加</button>
+      </div>
+    </div>`;
+  });
+  
+  el.innerHTML=html;
+}
+
+function toggleAllTasksCollapse(projId){
+  const p=DB.projects.find(x=>x.id===projId);
+  if(p) p.collapsed=!p.collapsed;
+  save(DB); renderAllTasks();
+}
+
+// ===================== 月別ビュー =====================
+let activeMonth='2026-06';
+
+function renderMonthly(){
+  const el=document.getElementById('monthly-view');
+  
+  // 月タブを生成（2026年6月〜12月）
+  const months=['2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12'];
+  const monthNames={'2026-06':'6月','2026-07':'7月','2026-08':'8月','2026-09':'9月','2026-10':'10月','2026-11':'11月','2026-12':'12月'};
+  
+  const tabs=months.map(m=>`<button class="month-tab${m===activeMonth?' active':''}" onclick="switchMonth('${m}')">${monthNames[m]}</button>`).join('');
+  
+  // アクティブ月のタスク表示
+  const [yr,mo]=activeMonth.split('-');
+  const monthStart=`${yr}-${mo}-01`;
+  const monthEnd=`${yr}-${mo}-${new Date(parseInt(yr),parseInt(mo),0).getDate()}`;
+  
+  let colsHtml='';
+  let hasAny=false;
+  
+  DB.projects.forEach(p=>{
+    const subs=p.subtasks.filter(s=>s.startDate<=monthEnd&&s.endDate>=monthStart);
+    if(subs.length===0) return;
+    hasAny=true;
+    const isCollapsed=p['collapsed_monthly_'+activeMonth]||false;
+    
+    colsHtml+=`<div class="board-col" style="margin-bottom:10px">
+      <div class="board-col-header" style="cursor:pointer" onclick="toggleMonthlyCollapse('${p.id}')">
+        <div class="col-color" style="background:${p.color}"></div>
+        <span class="col-title">${p.title}</span>
+        <span style="font-size:0.72rem;color:var(--muted);margin-right:6px">${subs.filter(s=>s.done).length}/${subs.length}</span>
+        <span class="col-toggle${isCollapsed?' collapsed':''}">▼</span>
+      </div>
+      <div class="board-col-body${isCollapsed?' collapsed':''}">
+        ${subs.map(s=>{
+          const isSelected=selectedSubtask&&selectedSubtask.id===s.id&&selectedProjId===p.id;
+          return `<div class="subtask-row${isSelected?' selected':''}" onclick="openDetail('${p.id}','${s.id}')">
+            <input type="checkbox" class="subtask-check"${s.done?' checked':''} onclick="event.stopPropagation()" onchange="toggleSubtask('${p.id}','${s.id}',this.checked)">
+            <span class="subtask-name${s.done?' done':''}">
+              ${s.text}
+              <span style="font-size:0.65rem;color:var(--muted);margin-left:6px">${s.startDate.slice(5).replace('-','/')}〜${s.endDate.slice(5).replace('-','/')}</span>
+            </span>
+            ${s.duration?`<span class="subtask-dur">${Math.floor(s.duration/60)?Math.floor(s.duration/60)+'h':''}${s.duration%60?s.duration%60+'m':''}</span>`:''}
+            <button class="subtask-delete" onclick="event.stopPropagation();deleteSubtask('${p.id}','${s.id}')" title="削除">🗑</button>
+          </div>`;
+        }).join('')}
+        <button class="add-subtask-btn" onclick="openAddSubtask('${p.id}')">＋ タスクを追加</button>
+      </div>
+    </div>`;
+  });
+  
+  if(!hasAny) colsHtml='<div style="color:var(--muted);font-size:0.85rem;padding:20px">この月のタスクはありません</div>';
+  
+  el.innerHTML=`
+    <div class="board-header" style="margin-bottom:14px">
+      <h2 style="font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--accent)">月別タスク</h2>
+      ${tabs}
+    </div>
+    <div>${colsHtml}</div>`;
+}
+
+function switchMonth(m){
+  activeMonth=m;
+  renderMonthly();
+}
+
+function toggleMonthlyCollapse(projId){
+  const p=DB.projects.find(x=>x.id===projId);
+  if(p){
+    const key='collapsed_monthly_'+activeMonth;
+    p[key]=!p[key];
+  }
+  save(DB); renderMonthly();
+}
 
 // ===================== 設定 =====================
 function renderSettings(){
