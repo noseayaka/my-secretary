@@ -1182,39 +1182,25 @@ window.onload=()=>{
 
 function carryOverYesterday(){
   const today = todayStr();
-  // 昨日の日付を計算
-  const yd = new Date();
-  yd.setDate(yd.getDate()-1);
-  const yesterday = fmtDate(yd);
+  let carried = 0;
 
-  // 昨日の未完了ブロックを取得
-  const unfinished = DB.blocks.filter(b=>b.date===yesterday&&!b.done);
-  if(unfinished.length===0) return;
-
-  // 今日すでに持ち越し済みのsubIdを確認
-  const todaySubIds = DB.blocks.filter(b=>b.date===today&&b.sub).map(b=>b.sub);
-  const todayTitles = DB.blocks.filter(b=>b.date===today&&!b.sub).map(b=>b.title);
-
-  let added = false;
-  unfinished.forEach(b=>{
-    // 同じタスクがすでに今日にあればスキップ
-    if(b.sub && todaySubIds.includes(b.sub)) return;
-    if(!b.sub && todayTitles.includes(b.title)) return;
-
-    DB.blocks.push({
-      ...b,
-      id: 'b'+Date.now()+Math.random().toString(36).slice(2),
-      date: today,
-      done: false,
-      carriedOver: true  // 持ち越しフラグ
+  // 未完了サブタスクで終了日が今日より前のものを今日にずらす
+  DB.projects.forEach(p=>{
+    p.subtasks.forEach(s=>{
+      if(s.done) return;
+      if(s.endDate && s.endDate < today){
+        // 期間を今日に延長（開始日も今日より前なら今日に）
+        if(s.startDate < today) s.startDate = today;
+        s.endDate = today;
+        s.carriedOver = true;
+        carried++;
+      }
     });
-    added = true;
   });
 
-  if(added){
+  if(carried > 0){
     save(DB, false);
-    // 持ち越しがあったことをキャラクターに言わせる
-    setTimeout(()=>setBubble('昨日のやり残しを今日に持ち越したよ！無理せず少しずつね🐻'), 500);
+    setTimeout(()=>setBubble(`${carried}件のやり残しタスクを今日に持ち越したよ！無理せず少しずつね🐻`), 500);
   }
 }
 </script>
