@@ -641,22 +641,20 @@ function renderCalendar(){
   const todayD=new Date(today);
   // 締め切りアイテムを配列に集めてdiffでソート
   const dlList=[];
+  // プロジェクト締め切りとサブタスク締め切りを全部まとめて収集
   DB.projects.forEach(p=>{
     if(!p.deadline) return;
     const diff=Math.ceil((new Date(p.deadline)-todayD)/86400000);
     const [badge,label]=diff<0?['dl-urgent','期限切れ']:diff<=3?['dl-urgent',`残${diff}日`]:diff<=7?['dl-soon',`残${diff}日`]:['dl-ok',`残${diff}日`];
     dlList.push({diff,html:`<div class="deadline-item"><span class="dl-badge ${badge}">${label}</span><span>${p.title}</span><span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">${p.deadline}</span></div>`});
-  });
-  DB.projects.forEach(p=>{
     p.subtasks.forEach(s=>{
       if(!s.endDate||s.done) return;
-      const diff=Math.ceil((new Date(s.endDate)-todayD)/86400000);
-      if(diff>14) return;
-      const [badge,label]=diff<0?['dl-urgent','期限切れ']:diff<=2?['dl-urgent',`残${diff}日`]:diff<=5?['dl-soon',`残${diff}日`]:['dl-ok',`残${diff}日`];
-      dlList.push({diff,html:`<div class="deadline-item"><span class="dl-badge ${badge}">${label}</span><span style="color:var(--muted);font-size:0.72rem">${p.title}›</span><span style="margin-left:3px">${s.text}</span><span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">${s.endDate}</span></div>`});
+      const sdiff=Math.ceil((new Date(s.endDate)-todayD)/86400000);
+      const [sb,sl]=sdiff<0?['dl-urgent','期限切れ']:sdiff<=2?['dl-urgent',`残${sdiff}日`]:sdiff<=5?['dl-soon',`残${sdiff}日`]:['dl-ok',`残${sdiff}日`];
+      dlList.push({diff:sdiff,html:`<div class="deadline-item"><span class="dl-badge ${sb}">${sl}</span><span style="color:var(--muted);font-size:0.72rem">${p.title}›</span><span style="margin-left:3px">${s.text}</span><span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">${s.endDate}</span></div>`});
     });
   });
-  // 残り日数が少ない順に並べる
+  // 残り日数の少ない順にソート（マイナス＝期限切れが最優先）
   dlList.sort((a,b)=>a.diff-b.diff);
   const dlItems=dlList.map(d=>d.html).join('');
 
