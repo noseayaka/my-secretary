@@ -519,7 +519,7 @@ function renderToday(){
     </div>
     ${todayBlocks.map(b=>`<div class="task-item${b.done?' done':''}">
       <input type="checkbox" class="task-check"${b.done?' checked':''} onchange="toggleBlock('${b.id}',this.checked)">
-      <span class="task-name${b.done?' done':''}">${b.title}</span>
+      <span class="task-name${b.done?' done':''}">${b.title}${b.carriedOver?'<span style="font-size:0.65rem;background:#d4a843;color:#fff;border-radius:4px;padding:1px 5px;margin-left:5px">昨日から</span>':''}</span>
       ${b.duration?`<span class="task-duration">${Math.floor(b.duration/60)?Math.floor(b.duration/60)+'h':''} ${b.duration%60?b.duration%60+'m':''}</span>`:''}
       <button class="task-del" onclick="deleteBlock('${b.id}')">✕</button>
     </div>`).join('')}
@@ -1079,9 +1079,51 @@ window.onload=()=>{
     save(DB, false);
     localStorage.setItem(KEY+'_version', VERSION);
   }
+
+  // 前日の未完了ブロックを今日に持ち越す
+  carryOverYesterday();
+
   renderToday();
   updateCharImg();
 };
+
+function carryOverYesterday(){
+  const today = todayStr();
+  // 昨日の日付を計算
+  const yd = new Date();
+  yd.setDate(yd.getDate()-1);
+  const yesterday = fmtDate(yd);
+
+  // 昨日の未完了ブロックを取得
+  const unfinished = DB.blocks.filter(b=>b.date===yesterday&&!b.done);
+  if(unfinished.length===0) return;
+
+  // 今日すでに持ち越し済みのsubIdを確認
+  const todaySubIds = DB.blocks.filter(b=>b.date===today&&b.sub).map(b=>b.sub);
+  const todayTitles = DB.blocks.filter(b=>b.date===today&&!b.sub).map(b=>b.title);
+
+  let added = false;
+  unfinished.forEach(b=>{
+    // 同じタスクがすでに今日にあればスキップ
+    if(b.sub && todaySubIds.includes(b.sub)) return;
+    if(!b.sub && todayTitles.includes(b.title)) return;
+
+    DB.blocks.push({
+      ...b,
+      id: 'b'+Date.now()+Math.random().toString(36).slice(2),
+      date: today,
+      done: false,
+      carriedOver: true  // 持ち越しフラグ
+    });
+    added = true;
+  });
+
+  if(added){
+    save(DB, false);
+    // 持ち越しがあったことをキャラクターに言わせる
+    setTimeout(()=>setBubble('昨日のやり残しを今日に持ち越したよ！無理せず少しずつね🐻'), 500);
+  }
+}
 </script>
 </body>
 </html>
