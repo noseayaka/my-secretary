@@ -639,12 +639,13 @@ function renderCalendar(){
 
   // 締め切り一覧
   const todayD=new Date(today);
-  let dlItems='';
+  // 締め切りアイテムを配列に集めてdiffでソート
+  const dlList=[];
   DB.projects.forEach(p=>{
     if(!p.deadline) return;
     const diff=Math.ceil((new Date(p.deadline)-todayD)/86400000);
     const [badge,label]=diff<0?['dl-urgent','期限切れ']:diff<=3?['dl-urgent',`残${diff}日`]:diff<=7?['dl-soon',`残${diff}日`]:['dl-ok',`残${diff}日`];
-    dlItems+=`<div class="deadline-item"><span class="dl-badge ${badge}">${label}</span><span>${p.title}</span><span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">${p.deadline}</span></div>`;
+    dlList.push({diff,html:`<div class="deadline-item"><span class="dl-badge ${badge}">${label}</span><span>${p.title}</span><span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">${p.deadline}</span></div>`});
   });
   DB.projects.forEach(p=>{
     p.subtasks.forEach(s=>{
@@ -652,9 +653,12 @@ function renderCalendar(){
       const diff=Math.ceil((new Date(s.endDate)-todayD)/86400000);
       if(diff>14) return;
       const [badge,label]=diff<0?['dl-urgent','期限切れ']:diff<=2?['dl-urgent',`残${diff}日`]:diff<=5?['dl-soon',`残${diff}日`]:['dl-ok',`残${diff}日`];
-      dlItems+=`<div class="deadline-item"><span class="dl-badge ${badge}">${label}</span><span style="color:var(--muted);font-size:0.72rem">${p.title}›</span><span style="margin-left:3px">${s.text}</span><span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">${s.endDate}</span></div>`;
+      dlList.push({diff,html:`<div class="deadline-item"><span class="dl-badge ${badge}">${label}</span><span style="color:var(--muted);font-size:0.72rem">${p.title}›</span><span style="margin-left:3px">${s.text}</span><span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">${s.endDate}</span></div>`});
     });
   });
+  // 残り日数が少ない順に並べる
+  dlList.sort((a,b)=>a.diff-b.diff);
+  const dlItems=dlList.map(d=>d.html).join('');
 
   el.innerHTML=`
   <div class="cal-nav">
