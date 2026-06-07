@@ -194,10 +194,31 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 <script>
 // ===================== データ =====================
 const KEY = 'task-sec-v6';
+const CHECKS_KEY = 'kumakichi-checks'; // チェック状態は別保存（リセットで消えない）
 let undoStack = [];
 
+function loadChecks(){
+  try{ return JSON.parse(localStorage.getItem(CHECKS_KEY))||{}; }catch(e){ return {}; }
+}
+function saveChecks(checks){
+  localStorage.setItem(CHECKS_KEY, JSON.stringify(checks));
+}
+function applyChecks(db){
+  // 保存済みチェック状態をDBに適用
+  const checks = loadChecks();
+  db.projects.forEach(p=>{
+    p.subtasks.forEach(s=>{
+      const k = p.id+'_'+s.id;
+      if(checks[k] !== undefined) s.done = checks[k];
+    });
+  });
+  return db;
+}
 function load(){
-  try{return JSON.parse(localStorage.getItem(KEY))||defaultData();}catch(e){return defaultData();}
+  try{
+    const db = JSON.parse(localStorage.getItem(KEY))||defaultData();
+    return applyChecks(db);
+  }catch(e){ return applyChecks(defaultData()); }
 }
 function save(d, pushUndo=true){
   if(pushUndo){
@@ -205,6 +226,14 @@ function save(d, pushUndo=true){
     if(undoStack.length > 30) undoStack.shift();
     document.getElementById('undo-btn').style.display = undoStack.length > 1 ? '' : 'none';
   }
+  // チェック状態を別途保存
+  const checks = loadChecks();
+  d.projects.forEach(p=>{
+    p.subtasks.forEach(s=>{
+      checks[p.id+'_'+s.id] = s.done;
+    });
+  });
+  saveChecks(checks);
   localStorage.setItem(KEY, JSON.stringify(d));
 }
 function doUndo(){
@@ -882,9 +911,12 @@ function toggleSubtask(projId,subId,checked){
   const p=DB.projects.find(x=>x.id===projId);
   const s=p&&p.subtasks.find(x=>x.id===subId);
   if(s) s.done=checked;
+  // チェック状態を即座に別保存
+  const checks=loadChecks();
+  checks[projId+'_'+subId]=checked;
+  saveChecks(checks);
   save(DB);
   if(checked) praiseSpeech();
-  // 全関連ビュー再描画
   if(currentView==='alltasks') renderAllTasks();
   else if(currentView==='monthly') renderMonthly();
   else if(currentView==='commissions') renderCommissions();
