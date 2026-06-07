@@ -1001,12 +1001,14 @@ function buildProjectHtml(p, viewKey){
   const done = p.subtasks.filter(s=>s.done).length;
   const total = p.subtasks.length;
   const pct = total>0 ? Math.round(done/total*100) : 0;
-  const isArchived = total>0 && done===total;
+  const showDone = p['showDone_'+viewKey] || false;
+  const activeSubs = p.subtasks.filter(s=>!s.done);
+  const doneSubs = p.subtasks.filter(s=>s.done);
 
-  return `<div class="board-col" style="margin-bottom:10px;${isArchived?'opacity:0.6':''}">
+  return `<div class="board-col" style="margin-bottom:10px">
     <div class="board-col-header" style="cursor:pointer" onclick="toggleViewCollapse('${p.id}','${viewKey}')">
       <div class="col-color" style="background:${p.color}"></div>
-      <span class="col-title">${p.title}${isArchived?' ✅':''}</span>
+      <span class="col-title">${p.title}</span>
       <span style="font-size:0.72rem;color:var(--muted);margin-right:8px">${done}/${total} (${pct}%)</span>
       <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-right:8px">
         <div style="width:${pct}%;height:100%;background:${p.color};border-radius:3px;transition:width .4s"></div>
@@ -1015,11 +1017,11 @@ function buildProjectHtml(p, viewKey){
       <span class="col-toggle${isCollapsed?' collapsed':''}">▼</span>
     </div>
     <div class="board-col-body${isCollapsed?' collapsed':''}">
-      ${p.subtasks.map(s=>{
+      ${activeSubs.map(s=>{
         const sel = selectedSubtask&&selectedSubtask.id===s.id&&selectedProjId===p.id;
         return `<div class="subtask-row${sel?' selected':''}" onclick="openDetail('${p.id}','${s.id}')">
-          <input type="checkbox" class="subtask-check"${s.done?' checked':''} onclick="event.stopPropagation()" onchange="toggleSubtask('${p.id}','${s.id}',this.checked)">
-          <span class="subtask-name${s.done?' done':''}">
+          <input type="checkbox" class="subtask-check" onclick="event.stopPropagation()" onchange="toggleSubtask('${p.id}','${s.id}',this.checked)">
+          <span class="subtask-name">
             ${s.text}
             ${s.startDate?`<span style="font-size:0.65rem;color:var(--muted);margin-left:6px">${s.startDate.slice(5).replace('-','/')}〜${s.endDate?s.endDate.slice(5).replace('-','/'):''}</span>`:''}
           </span>
@@ -1027,9 +1029,29 @@ function buildProjectHtml(p, viewKey){
           <button class="subtask-delete" onclick="event.stopPropagation();deleteSubtask('${p.id}','${s.id}')" title="削除">🗑</button>
         </div>`;
       }).join('')}
+      ${doneSubs.length>0?`
+        <div style="padding:4px 13px">
+          <button onclick="event.stopPropagation();toggleShowDone('${p.id}','${viewKey}')" style="font-size:0.72rem;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 0">
+            ${showDone?'▲ 完了済みを隠す':'▼ 完了済み '+doneSubs.length+'件を表示'}
+          </button>
+        </div>
+        ${showDone?doneSubs.map(s=>`<div class="subtask-row" style="opacity:0.5" onclick="openDetail('${p.id}','${s.id}')">
+          <input type="checkbox" class="subtask-check" checked onclick="event.stopPropagation()" onchange="toggleSubtask('${p.id}','${s.id}',this.checked)">
+          <span class="subtask-name done">${s.text}</span>
+          <button class="subtask-delete" onclick="event.stopPropagation();deleteSubtask('${p.id}','${s.id}')" title="削除">🗑</button>
+        </div>`).join(''):''}
+      `:''}
       <button class="add-subtask-btn" onclick="openAddSubtask('${p.id}')">＋ タスクを追加</button>
     </div>
   </div>`;
+}
+
+function toggleShowDone(projId, viewKey){
+  const p = DB.projects.find(x=>x.id===projId);
+  if(p) p['showDone_'+viewKey] = !p['showDone_'+viewKey];
+  if(viewKey==='all') renderAllTasks();
+  else if(viewKey==='commissions') renderCommissions();
+  else renderMonthly();
 }
 
 function toggleViewCollapse(projId, viewKey){
