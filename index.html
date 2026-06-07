@@ -298,12 +298,28 @@ function defaultData(){
         ]
       },
       {
-        id:'goal6',title:'YouTube毎月投稿',color:'#a05050',deadline:'2026-12-31',duration:0,memo:'毎月1本以上',collapsed:true,
+        id:'goal6',title:'YouTube毎月投稿',color:'#a05050',deadline:'2026-12-31',duration:0,memo:'毎月1本・制作過程や刺繍と連動',collapsed:true,
         subtasks:[
-          {id:'g6s1',text:'6月動画：テーマ・内容を決める',done:false,startDate:'2026-06-07',endDate:'2026-06-08',duration:60,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g6s2',text:'6月動画：撮影（制作風景・作業まとめ）',done:false,startDate:'2026-06-16',endDate:'2026-06-17',duration:120,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g6s3',text:'6月動画：編集・サムネ作成・投稿',done:false,startDate:'2026-06-23',endDate:'2026-06-25',duration:180,memo:'',notes:'',checks:[],carryover:false},
-          {id:'g6s4',text:'7月動画：テーマ決め・撮影・編集・投稿',done:false,startDate:'2026-07-14',endDate:'2026-07-25',duration:360,memo:'',notes:'',checks:[],carryover:false},
+          // === 6月動画 ===
+          {id:'g6s1',text:'6月動画：チャンネルコンセプト・ターゲット視聴者を決める',done:false,startDate:'2026-06-07',endDate:'2026-06-07',duration:60,memo:'例：ハンドメイド作家の日常・制作過程',notes:'',checks:[],carryover:false},
+          {id:'g6s2',text:'6月動画：動画の構成・台本を書く（導入30秒・本編・まとめ）',done:false,startDate:'2026-06-09',endDate:'2026-06-09',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s3',text:'6月動画：制作風景を撮影（三脚固定・手元アップ）',done:false,startDate:'2026-06-14',endDate:'2026-06-14',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s4',text:'6月動画：動画編集（カット・BGM・テロップ入れ）',done:false,startDate:'2026-06-21',endDate:'2026-06-22',duration:180,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s5',text:'6月動画：サムネイル作成（文字・画像・色を目立つデザインに）',done:false,startDate:'2026-06-23',endDate:'2026-06-23',duration:60,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s6',text:'6月動画：タイトル・説明文・タグを設定して投稿',done:false,startDate:'2026-06-24',endDate:'2026-06-24',duration:30,memo:'',notes:'',checks:[],carryover:false},
+          // === 7月動画 ===
+          {id:'g6s7',text:'7月動画：テーマ決め（花札制作過程orイラストメイキング）',done:false,startDate:'2026-07-01',endDate:'2026-07-02',duration:30,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s8',text:'7月動画：撮影（制作しながら進捗を記録）',done:false,startDate:'2026-07-07',endDate:'2026-07-08',duration:120,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s9',text:'7月動画：編集・サムネ作成・投稿',done:false,startDate:'2026-07-20',endDate:'2026-07-22',duration:240,memo:'',notes:'',checks:[],carryover:false},
+          // === 8月以降 毎月繰り返し ===
+          {id:'g6s10',text:'8月動画：テーマ決め・撮影・編集・投稿',done:false,startDate:'2026-08-03',endDate:'2026-08-22',duration:360,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s11',text:'9月動画：テーマ決め・撮影・編集・投稿',done:false,startDate:'2026-09-01',endDate:'2026-09-20',duration:360,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s12',text:'10月動画：テーマ決め・撮影・編集・投稿',done:false,startDate:'2026-10-01',endDate:'2026-10-20',duration:360,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s13',text:'11月動画：テーマ決め・撮影・編集・投稿',done:false,startDate:'2026-11-01',endDate:'2026-11-20',duration:360,memo:'',notes:'',checks:[],carryover:false},
+          {id:'g6s14',text:'12月動画：テーマ決め・撮影・編集・投稿',done:false,startDate:'2026-12-01',endDate:'2026-12-20',duration:360,memo:'',notes:'',checks:[],carryover:false},
+          // === チャンネル育成 ===
+          {id:'g6s15',text:'コメントに全件返信する（投稿後1週間）',done:false,startDate:'2026-06-25',endDate:'2026-12-31',duration:20,memo:'毎回投稿後',notes:'',checks:[],carryover:false},
+          {id:'g6s16',text:'再生数・視聴維持率をYouTube Studioで確認・改善点メモ',done:false,startDate:'2026-07-01',endDate:'2026-12-31',duration:30,memo:'月1回',notes:'',checks:[],carryover:false},
         ]
       },
       // ====== 現在のお仕事タスク ======
@@ -450,8 +466,6 @@ function renderToday(){
 
   const d=new Date();
   const dateStr=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
-  const times=['午前','午後','夜','終日'];
-
   const hour=new Date().getHours();
   const greetList=hour<12?['おはよう！今日もいい一日にしよう！','朝だよ！一緒にがんばろう！']:
     hour<17?['こんにちは！午後も一緒に頑張ろう！','お昼過ぎ。休憩した？']:
@@ -493,25 +507,22 @@ function renderToday(){
     </div>
   </div>`;
 
-  times.forEach(time=>{
-    const bs=todayBlocks.filter(b=>b.time===time);
-    const done=bs.filter(b=>b.done).length;
-    const pctBlock=bs.length>0?Math.round(done/bs.length*100):0;
-    html+=`<div class="time-block">
-      <div class="block-header">
-        <span class="block-label">${time}</span>
-        <div class="block-progress"><div class="block-progress-inner" style="width:${pctBlock}%"></div></div>
-        <span class="block-count">${done}/${bs.length}</span>
-      </div>
-      ${bs.map(b=>`<div class="task-item${b.done?' done':''}">
-        <input type="checkbox" class="task-check"${b.done?' checked':''} onchange="toggleBlock('${b.id}',this.checked)">
-        <span class="task-name${b.done?' done':''}">${b.title}</span>
-        ${b.duration?`<span class="task-duration">${b.duration}m</span>`:''}
-        <button class="task-del" onclick="deleteBlock('${b.id}')">✕</button>
-      </div>`).join('')}
-      <button class="add-block-btn" onclick="openAddBlock('${time}','${today}')">＋ タスクを追加</button>
-    </div>`;
-  });
+  // 今日のタスク一覧（時間帯なし）
+  html+=`<div class="time-block">
+    <div class="block-header">
+      <span class="block-label">今日のタスク</span>
+      <div class="block-progress"><div class="block-progress-inner" style="width:${pct}%"></div></div>
+      <span class="block-count">${todayBlocks.filter(b=>b.done).length}/${todayBlocks.length}</span>
+    </div>
+    ${todayBlocks.map(b=>`<div class="task-item${b.done?' done':''}">
+      <input type="checkbox" class="task-check"${b.done?' checked':''} onchange="toggleBlock('${b.id}',this.checked)">
+      <span class="task-name${b.done?' done':''}">${b.title}</span>
+      ${b.duration?`<span class="task-duration">${Math.floor(b.duration/60)?Math.floor(b.duration/60)+'h':''} ${b.duration%60?b.duration%60+'m':''}</span>`:''}
+      <button class="task-del" onclick="deleteBlock('${b.id}')">✕</button>
+    </div>`).join('')}
+    ${todayBlocks.length===0?'<div style="padding:14px 16px;color:var(--muted);font-size:0.82rem">今日のタスクはありません</div>':''}
+    <button class="add-block-btn" onclick="openAddBlock('今日','${today}')">＋ タスクを追加</button>
+  </div>`;
 
   el.innerHTML=html;
   updateCharImg();
@@ -551,13 +562,13 @@ function openAddBlock(time,date){
       subOptions+=`<option value="${p.id}|||${s.id}">${p.title}：${s.text}</option>`;
     });
   });
-  showModal(`<h3>タスクを追加（${time}）</h3>
+  showModal(`<h3>タスクを追加</h3>
     <div class="modal-field"><label>タイトル</label><input id="m-title" placeholder="タスク名"></div>
     <div class="modal-field"><label>既存タスクから選ぶ</label><select id="m-sub">${subOptions}</select></div>
     <div class="modal-field"><label>時間（分）</label><input id="m-dur" type="number" placeholder="30"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
-      <button class="btn-ok" onclick="doAddBlock('${time}','${date}')">追加</button>
+      <button class="btn-ok" onclick="doAddBlock('今日','${date}')">追加</button>
     </div>`);
 }
 function doAddBlock(time,date){
