@@ -670,23 +670,14 @@ function renderCalendar(){
   DB.projects.forEach(p=>{
     if(p.deadline){
       if(!tasksByDate[p.deadline]) tasksByDate[p.deadline]=[];
-      tasksByDate[p.deadline].push({text:'〆'+p.title,color:p.color,single:true,startDate:p.deadline,endDate:p.deadline});
+      tasksByDate[p.deadline].push({text:'〆'+p.title,color:p.color});
     }
+    // 開始日のみに表示（途中日・終了日は表示しない）
     p.subtasks.filter(s=>!s.done).forEach(s=>{
-      if(!s.startDate||!s.endDate) return;
-      const isSpan = s.startDate !== s.endDate;
-      const start=new Date(s.startDate), end=new Date(s.endDate);
-      for(let dd=new Date(start);dd<=end;dd.setDate(dd.getDate()+1)){
-        const ds=fmtDate(dd);
-        if(!tasksByDate[ds]) tasksByDate[ds]=[];
-        const isStart = ds===s.startDate;
-        const isEnd = ds===s.endDate;
-        tasksByDate[ds].push({
-          text:s.text, color:p.color,
-          spanType: !isSpan?'single': isStart?'start': isEnd?'end':'mid',
-          startDate:s.startDate, endDate:s.endDate
-        });
-      }
+      if(!s.startDate) return;
+      const ds=s.startDate;
+      if(!tasksByDate[ds]) tasksByDate[ds]=[];
+      tasksByDate[ds].push({text:s.text,color:p.color,endDate:s.endDate});
     });
   });
 
@@ -701,9 +692,8 @@ function renderCalendar(){
     const isToday=ds===today;
     const dayTasks=tasksByDate[ds]||[];
     const mini=dayTasks.slice(0,3).map(t=>{
-      const cls = t.spanType||'single';
-      const showText = cls==='single'||cls==='start';
-      return `<div class="cal-task-mini span-${cls}" style="background:${t.color}"><span class="span-text">${showText?t.text:''}</span></div>`;
+      const label = t.endDate&&t.endDate!==ds ? `${t.text}〜${t.endDate.slice(5).replace('-','/')}` : t.text;
+      return `<div class="cal-task-mini" style="background:${t.color}">${label}</div>`;
     }).join('');
     cells+=`<div class="cal-cell${isToday?' today-cell':''}" onclick="openCalDay('${ds}')">
       <div class="cal-date-num">${day}</div>${mini}
