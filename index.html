@@ -530,11 +530,11 @@ function showView(v){
 function renderToday(){
   const el=document.getElementById('today-view');
   const today=todayStr();
-  // 今日が期間内の未完了サブタスクを直接収集（ブロック不要）
+  // 今日が期間内のサブタスクを収集（完了・未完了両方）
   const todayTasks=[];
   DB.projects.forEach(p=>{
     p.subtasks.forEach(s=>{
-      if(!s.done&&s.startDate<=today&&s.endDate>=today){
+      if(s.startDate<=today&&s.endDate>=today){
         todayTasks.push({...s,projId:p.id,projColor:p.color,projTitle:p.title});
       }
     });
@@ -543,7 +543,8 @@ function renderToday(){
   const manualBlocks=DB.blocks.filter(b=>b.date===today&&!b.sub);
   const todayBlocks=[...todayTasks.map(s=>({
     id:s.id,title:s.text,sub:s.id,done:s.done,
-    duration:s.duration||0,projColor:s.projColor,projId:s.projId,isSub:true,projTitle:s.projTitle
+    duration:s.duration||0,projColor:s.projColor,projId:s.projId,isSub:true,
+    projTitle:s.projTitle,carriedOver:s.carriedOver
   })),...manualBlocks];
 
   // 合計時間・完了時間
