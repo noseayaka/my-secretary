@@ -530,17 +530,32 @@ function showView(v){
 function renderToday(){
   const el=document.getElementById('today-view');
   const today=todayStr();
-  // 今日が期間内のサブタスクを自動でブロックに追加（まだ追加されていないもの）
+  // 今日が期間内の未完了サブタスクを自動でブロックに追加
+  // まず今日の既存ブロックのsubIdを収集
   const existingSubIds=DB.blocks.filter(b=>b.date===today&&b.sub).map(b=>b.sub);
   let added=false;
   DB.projects.forEach(p=>{
     p.subtasks.forEach(s=>{
       if(!s.done&&s.startDate<=today&&s.endDate>=today&&!existingSubIds.includes(s.id)){
-        DB.blocks.push({id:'b'+Date.now()+Math.random().toString(36).slice(2),date:today,time:'午前',title:s.text,sub:s.id,done:false,duration:s.duration||0,projId:p.id,projColor:p.color});
+        DB.blocks.push({
+          id:'b'+Date.now()+Math.random().toString(36).slice(2),
+          date:today,time:'午前',title:s.text,sub:s.id,
+          done:false,duration:s.duration||0,projId:p.id,projColor:p.color
+        });
         existingSubIds.push(s.id);
         added=true;
       }
     });
+  });
+  // 重複ブロック（同じsubIdが複数）を除去
+  const seen={};
+  DB.blocks=DB.blocks.filter(b=>{
+    if(!b.sub) return true;
+    if(b.date===today){
+      if(seen[b.sub]) return false;
+      seen[b.sub]=true;
+    }
+    return true;
   });
   if(added) save(DB,false);
 
