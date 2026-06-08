@@ -1269,8 +1269,8 @@ window.onload=()=>{
   const VERSION = 'v10';
   if(localStorage.getItem(KEY+'_version') !== VERSION){
     localStorage.removeItem(KEY);
-    DB = defaultData();
-    save(DB, false);
+    DB = applyChecks(defaultData()); // チェック状態を復元してから適用
+    localStorage.setItem(KEY, JSON.stringify(DB));
     localStorage.setItem(KEY+'_version', VERSION);
   }
 
