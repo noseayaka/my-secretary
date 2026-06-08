@@ -1298,13 +1298,12 @@ function carryOverYesterday(){
   const today = todayStr();
   let carried = 0;
 
-  // 未完了サブタスクで終了日が今日より前のものを今日にずらす
+  // 未完了サブタスクで終了日が今日より前のものを全部今日にずらす（数日サボってもOK）
   DB.projects.forEach(p=>{
     p.subtasks.forEach(s=>{
       if(s.done) return;
       if(s.endDate && s.endDate < today){
-        // 期間を今日に延長（開始日も今日より前なら今日に）
-        if(s.startDate < today) s.startDate = today;
+        s.startDate = today;
         s.endDate = today;
         s.carriedOver = true;
         carried++;
@@ -1314,7 +1313,7 @@ function carryOverYesterday(){
 
   if(carried > 0){
     save(DB, false);
-    setTimeout(()=>setBubble(`${carried}件のやり残しタスクを今日に持ち越したよ！無理せず少しずつね🐻`), 500);
+    setTimeout(()=>setBubble(`${carried}件のやり残しを今日に持ち越したよ！無理せず少しずつね🐻`), 500);
   }
 }
 </script>
