@@ -530,36 +530,21 @@ function showView(v){
 function renderToday(){
   const el=document.getElementById('today-view');
   const today=todayStr();
-  // 今日が期間内の未完了サブタスクを自動でブロックに追加
-  // まず今日の既存ブロックのsubIdを収集
-  const existingSubIds=DB.blocks.filter(b=>b.date===today&&b.sub).map(b=>b.sub);
-  let added=false;
+  // 今日が期間内の未完了サブタスクを直接収集（ブロック不要）
+  const todayTasks=[];
   DB.projects.forEach(p=>{
     p.subtasks.forEach(s=>{
-      if(!s.done&&s.startDate<=today&&s.endDate>=today&&!existingSubIds.includes(s.id)){
-        DB.blocks.push({
-          id:'b'+Date.now()+Math.random().toString(36).slice(2),
-          date:today,time:'午前',title:s.text,sub:s.id,
-          done:false,duration:s.duration||0,projId:p.id,projColor:p.color
-        });
-        existingSubIds.push(s.id);
-        added=true;
+      if(!s.done&&s.startDate<=today&&s.endDate>=today){
+        todayTasks.push({...s,projId:p.id,projColor:p.color,projTitle:p.title});
       }
     });
   });
-  // 重複ブロック（同じsubIdが複数）を除去
-  const seen={};
-  DB.blocks=DB.blocks.filter(b=>{
-    if(!b.sub) return true;
-    if(b.date===today){
-      if(seen[b.sub]) return false;
-      seen[b.sub]=true;
-    }
-    return true;
-  });
-  if(added) save(DB,false);
-
-  const todayBlocks=DB.blocks.filter(b=>b.date===today);
+  // 手動追加ブロック（subなし）も含める
+  const manualBlocks=DB.blocks.filter(b=>b.date===today&&!b.sub);
+  const todayBlocks=[...todayTasks.map(s=>({
+    id:s.id,title:s.text,sub:s.id,done:s.done,
+    duration:s.duration||0,projColor:s.projColor,projId:s.projId,isSub:true,projTitle:s.projTitle
+  })),...manualBlocks];
 
   // 合計時間・完了時間
   const doneMin=todayBlocks.filter(b=>b.done).reduce((s,b)=>s+(b.duration||0),0);
@@ -650,17 +635,21 @@ function addSuggestedToBlock(){
   save(DB); renderToday(); setBubble('今日のタスクを追加したよ！');
 }
 function toggleBlock(id,checked){
-  const b=DB.blocks.find(x=>x.id===id);
-  if(b){
-    b.done=checked;
-    // サブタスクにも連動
-    if(b.sub){
-      DB.projects.forEach(p=>{
-        const s=p.subtasks.find(x=>x.id===b.sub);
-        if(s) s.done=checked;
-      });
-    }
+  // サブタスクを直接更新
+  let projId=null;
+  DB.projects.forEach(p=>{
+    const s=p.subtasks.find(x=>x.id===id);
+    if(s){ s.done=checked; projId=p.id; }
+  });
+  // チェック状態を別保存
+  if(projId){
+    const checks=loadChecks();
+    checks[projId+'_'+id]=checked;
+    saveChecks(checks);
   }
+  // 手動ブロックの場合も更新
+  const b=DB.blocks.find(x=>x.id===id);
+  if(b) b.done=checked;
   save(DB);
   if(checked) praiseSpeech();
   renderToday();
