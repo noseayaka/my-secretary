@@ -1025,7 +1025,24 @@ function saveDetail(){
   selectedSubtask.duration=parseInt(document.getElementById('d-dur').value)||0;
   selectedSubtask.memo=document.getElementById('d-memo').value;
   selectedSubtask.notes=document.getElementById('d-notes').value;
-  save(DB); setBubble('保存したよ！'); renderBoard();
+  save(DB);
+  setBubble('保存したよ！');
+  closeDetail();
+  if(currentView==='board') renderBoard();
+  else if(currentView==='alltasks') renderAllTasks();
+  else if(currentView==='monthly') renderMonthly();
+  else if(currentView==='commissions') renderCommissions();
+  else if(currentView==='today') renderToday();
+}
+
+function setOneDay(){
+  const d=document.getElementById('d-start').value;
+  if(d) document.getElementById('d-end').value=d;
+}
+
+function setNoDate(){
+  document.getElementById('d-start').value='';
+  document.getElementById('d-end').value='';
 }
 function addCheck(){ if(!selectedSubtask) return; selectedSubtask.checks.push({text:'',done:false}); openDetail(selectedProjId,selectedSubtask.id); }
 function updateCheck(i,v){ if(selectedSubtask) selectedSubtask.checks[i].done=v; }
