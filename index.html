@@ -532,9 +532,13 @@ function renderToday(){
   const today=todayStr();
   // 今日が期間内のサブタスクを収集（完了・未完了両方）
   const todayTasks=[];
+  const undatedTasks=[];
   DB.projects.forEach(p=>{
     p.subtasks.forEach(s=>{
-      if(s.startDate<=today&&s.endDate>=today){
+      if(!s.startDate&&!s.endDate){
+        // 日付未設定→未定リスト
+        undatedTasks.push({...s,projId:p.id,projColor:p.color,projTitle:p.title});
+      } else if(s.startDate<=today&&s.endDate>=today){
         todayTasks.push({...s,projId:p.id,projColor:p.color,projTitle:p.title});
       }
     });
@@ -614,6 +618,18 @@ function renderToday(){
     ${todayBlocks.length===0?'<div style="padding:14px 16px;color:var(--muted);font-size:0.82rem">今日のタスクはありません</div>':''}
     <button class="add-block-btn" onclick="openAddBlock('今日','${today}')">＋ タスクを追加</button>
   </div>`;
+
+  // 未定タスク欄
+  if(undatedTasks.length>0){
+    html+='<div class="time-block" style="margin-top:10px"><div class="block-header"><span class="block-label" style="color:var(--muted)">📋 未定・いつかやる</span></div>';
+    undatedTasks.forEach(s=>{
+      html+=`<div class="task-item${s.done?' done':''}">
+        <input type="checkbox" class="task-check"${s.done?' checked':''} onchange="toggleBlock('${s.id}',this.checked)">
+        <span class="task-name${s.done?' done':''}">${s.text} <span style="font-size:0.65rem;color:var(--muted)">${s.projTitle}</span></span>
+      </div>`;
+    });
+    html+='</div>';
+  }
 
   el.innerHTML=html;
   updateCharImg();
@@ -978,8 +994,15 @@ function openDetail(projId,subId){
   document.getElementById('detail-title').textContent=s.text;
   const checks=s.checks||[];
   document.getElementById('detail-body').innerHTML=`
-    <div class="detail-field"><label>開始日</label><input id="d-start" type="date" value="${s.startDate||''}"></div>
-    <div class="detail-field"><label>終了日</label><input id="d-end" type="date" value="${s.endDate||''}"></div>
+    <div class="detail-field"><label>日付</label>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <input id="d-start" type="date" value="${s.startDate||''}" style="flex:1">
+        <span style="color:var(--muted);font-size:0.8rem">〜</span>
+        <input id="d-end" type="date" value="${s.endDate||''}" style="flex:1">
+        <button onclick="setOneDay()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer;white-space:nowrap">1日だけ</button>
+        <button onclick="setNoDate()" style="background:var(--muted);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer;white-space:nowrap">未定</button>
+      </div>
+    </div>
     <div class="detail-field"><label>目標時間（分）</label><input id="d-dur" type="number" value="${s.duration||''}"></div>
     <div class="detail-field"><label>作業メモ</label><textarea id="d-memo">${s.memo||''}</textarea></div>
     <div class="detail-field"><label>追加メモ</label><textarea id="d-notes">${s.notes||''}</textarea></div>
