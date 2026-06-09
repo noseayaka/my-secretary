@@ -1191,7 +1191,9 @@ function renderAllTasks(){
   const archived = DB.projects.filter(p => isAllDone(p));
 
   let html = '<div style="margin-bottom:14px"><h2 style=\'font-family:\'DM Serif Display\',serif;font-size:1.25rem;color:var(--accent)\'>全タスク一覧</h2></div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start">';
   active.forEach(p => { html += buildProjectHtml(p,'all'); });
+  html += '</div>';
   if(archived.length>0) html += buildArchiveSection(archived,'all');
   el.innerHTML = html;
 }
