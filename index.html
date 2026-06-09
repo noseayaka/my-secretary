@@ -1074,7 +1074,7 @@ function deleteCheck(i){ if(selectedSubtask){ selectedSubtask.checks.splice(i,1)
 
 // ===================== 共通：プロジェクトリスト描画 =====================
 function buildProjectHtml(p, viewKey){
-  const isCollapsed = p['collapsed_'+viewKey] || false;
+  const isCollapsed = p['collapsed_'+viewKey] !== false ? (p['collapsed_'+viewKey] || true) : false;
   const done = p.subtasks.filter(s=>s.done).length;
   const total = p.subtasks.length;
   const pct = total>0 ? Math.round(done/total*100) : 0;
@@ -1082,16 +1082,16 @@ function buildProjectHtml(p, viewKey){
   const activeSubs = p.subtasks.filter(s=>!s.done);
   const doneSubs = p.subtasks.filter(s=>s.done);
 
-  return `<div class="board-col" style="margin-bottom:10px">
-    <div class="board-col-header" style="cursor:pointer" onclick="toggleViewCollapse('${p.id}','${viewKey}')">
-      <div class="col-color" style="background:${p.color}"></div>
-      <span class="col-title">${p.title}</span>
-      <span style="font-size:0.72rem;color:var(--muted);margin-right:8px">${done}/${total} (${pct}%)</span>
-      <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-right:8px">
+  return `<div class="board-col" style="margin-bottom:0">
+    <div class="board-col-header" style="cursor:pointer;padding:10px 13px" onclick="toggleViewCollapse('${p.id}','${viewKey}')">
+      <div class="col-color" style="background:${p.color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
+      <span class="col-title" style="flex:1;font-size:0.85rem">${p.title}</span>
+      <span style="font-size:0.7rem;color:var(--muted);margin-right:6px;white-space:nowrap">${done}/${total}</span>
+      <div style="width:60px;height:4px;background:var(--border);border-radius:3px;overflow:hidden;margin-right:6px;flex-shrink:0">
         <div style="width:${pct}%;height:100%;background:${p.color};border-radius:3px;transition:width .4s"></div>
       </div>
       <button class="col-del-btn" onclick="event.stopPropagation();deleteProject('${p.id}')" title="削除">🗑</button>
-      <span class="col-toggle${isCollapsed?' collapsed':''}">▼</span>
+      <span class="col-toggle${isCollapsed?' collapsed':''}">▶</span>
     </div>
     <div class="board-col-body${isCollapsed?' collapsed':''}">
       ${activeSubs.map(s=>{
@@ -1190,9 +1190,17 @@ function renderAllTasks(){
   const active = DB.projects.filter(p => !isAllDone(p));
   const archived = DB.projects.filter(p => isAllDone(p));
 
+  // その他・突発タスクを先頭に、残りを後ろに
+  const otherProj = active.find(p=>p.id==='other');
+  const restProj = active.filter(p=>p.id!=='other');
+  const ordered = otherProj ? [otherProj, ...restProj] : restProj;
+
+  // デフォルトで全部折りたたむ（collapsed_allがundefinedなら折りたたみ）
+  ordered.forEach(p=>{ if(p['collapsed_all']===undefined) p['collapsed_all']=true; });
+
   let html = '<div style="margin-bottom:14px"><h2 style=\'font-family:\'DM Serif Display\',serif;font-size:1.25rem;color:var(--accent)\'>全タスク一覧</h2></div>';
   html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start">';
-  active.forEach(p => { html += buildProjectHtml(p,'all'); });
+  ordered.forEach(p => { html += buildProjectHtml(p,'all'); });
   html += '</div>';
   if(archived.length>0) html += buildArchiveSection(archived,'all');
   el.innerHTML = html;
