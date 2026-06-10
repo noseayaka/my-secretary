@@ -631,8 +631,8 @@ function renderToday(){
       <div class="block-progress"><div class="block-progress-inner" style="width:${pct}%"></div></div>
       <span class="block-count">${todayBlocks.filter(b=>b.done).length}/${todayBlocks.length}</span>
     </div>
-    ${todayBlocks.map(b=>`<div class="task-item${b.done?' done':''}">
-      <input type="checkbox" class="task-check"${b.done?' checked':''} onchange="toggleBlock('${b.id}',this.checked)">
+    ${todayBlocks.map(b=>`<div class="task-item${b.done?' done':''}" style="cursor:pointer" onclick="openDetailFromToday('${b.id}','${b.projId||''}')">
+      <input type="checkbox" class="task-check"${b.done?' checked':''} onclick="event.stopPropagation()" onchange="toggleBlock('${b.id}',this.checked)">
       <span class="task-name${b.done?' done':''}">${b.title}${b.carriedOver?'<span style="font-size:0.65rem;background:#d4a843;color:#fff;border-radius:4px;padding:1px 5px;margin-left:5px">昨日から</span>':''} <span style="font-size:0.65rem;color:var(--muted)">${b.projTitle||''}</span></span>
       ${b.duration?`<span class="task-duration">${Math.floor(b.duration/60)?Math.floor(b.duration/60)+'h':''} ${b.duration%60?b.duration%60+'m':''}</span>`:''}
       <button class="task-del" onclick="deleteBlock('${b.id}')">✕</button>
@@ -1057,6 +1057,17 @@ function saveDetail(){
   else if(currentView==='today') renderToday();
 }
 
+function openDetailFromToday(subId, projId){
+  // projIdがあればそのまま、なければ全プロジェクトから検索
+  let targetProjId = projId;
+  if(!targetProjId){
+    DB.projects.forEach(p=>{
+      if(p.subtasks.find(s=>s.id===subId)) targetProjId=p.id;
+    });
+  }
+  if(targetProjId) openDetail(targetProjId, subId);
+}
+
 function setOneDay(){
   const d=document.getElementById('d-start').value;
   if(d) document.getElementById('d-end').value=d;
@@ -1085,7 +1096,10 @@ function buildProjectHtml(p, viewKey){
   return `<div class="board-col" style="margin-bottom:0">
     <div class="board-col-header" style="cursor:pointer;padding:10px 13px" onclick="toggleViewCollapse('${p.id}','${viewKey}')">
       <div class="col-color" style="background:${p.color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
-      <span class="col-title" style="flex:1;font-size:0.85rem">${p.title}</span>
+      <div style="flex:1">
+        <span class="col-title" style="font-size:0.85rem">${p.title}</span>
+        ${p.orderedDate?`<span style="display:block;font-size:0.62rem;color:var(--muted)">受注：${p.orderedDate}</span>`:''}
+      </div>
       <span style="font-size:0.7rem;color:var(--muted);margin-right:6px;white-space:nowrap">${done}/${total}</span>
       <div style="width:60px;height:4px;background:var(--border);border-radius:3px;overflow:hidden;margin-right:6px;flex-shrink:0">
         <div style="width:${pct}%;height:100%;background:${p.color};border-radius:3px;transition:width .4s"></div>
@@ -1143,23 +1157,74 @@ function toggleViewCollapse(projId, viewKey){
 // ===================== 制作依頼ビュー =====================
 function renderCommissions(){
   const el = document.getElementById('commissions-view');
-  // 制作依頼プロジェクト（タイトルに「依頼」「パンフ」「レクサス」「TANZO」を含むもの）
-  const isCommission = p => /依頼|パンフ|レクサス|TANZO/.test(p.title);
 
-  const active = DB.projects.filter(p => isCommission(p) && !isAllDone(p));
-  const archived = DB.projects.filter(p => isCommission(p) && isAllDone(p));
+  const isTanzo = p => /TANZO|タンゾー|tanzo/.test(p.title);
+  const isAtelier = p => /atelier|依頼|辻義塾/.test(p.title) && !isTanzo(p);
+  const isComm = p => isTanzo(p) || isAtelier(p);
 
-  let html = '<div style="margin-bottom:14px"><h2 style=\'font-family:\'DM Serif Display\',serif;font-size:1.25rem;color:var(--accent)\'>制作依頼</h2></div>';
+  const tanzoActive = DB.projects.filter(p => isTanzo(p) && !isAllDone(p));
+  const tanzoArchived = DB.projects.filter(p => isTanzo(p) && isAllDone(p));
+  const atelierActive = DB.projects.filter(p => isAtelier(p) && !isAllDone(p));
+  const atelierArchived = DB.projects.filter(p => isAtelier(p) && isAllDone(p));
 
-  if(active.length===0 && archived.length===0){
-    html += '<div style="color:var(--muted);padding:20px">制作依頼のタスクはありません</div>';
-  } else {
-    active.forEach(p => { html += buildProjectHtml(p,'commissions'); });
-    if(archived.length>0){
-      html += buildArchiveSection(archived, 'commissions');
-    }
+  function buildSection(title, color, active, archived){
+    let s = `<div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:12px;height:12px;border-radius:50%;background:${color}"></div>
+        <h3 style="font-size:1rem;color:var(--text);margin:0">${title}</h3>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start">`;
+    active.forEach(p=>{ s+=buildProjectHtml(p,'commissions'); });
+    s+='</div>';
+    if(archived.length>0) s+=buildArchiveSection(archived,'commissions');
+    s+='</div>';
+    return s;
   }
+
+  let html = `<div style="margin-bottom:14px">
+    <h2 style="font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--accent)">制作依頼</h2>
+    <button onclick="openNewCommission()" style="margin-top:8px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 16px;font-size:0.8rem;cursor:pointer">＋ 新規依頼を追加</button>
+  </div>`;
+
+  html += buildSection('TANZO', '#6a8a5a', tanzoActive, tanzoArchived);
+  html += buildSection('ateliertouca', '#b07aa0', atelierActive, atelierArchived);
+
   el.innerHTML = html;
+}
+
+function openNewCommission(){
+  showModal(`<h3>新規依頼を追加</h3>
+    <div class="modal-field"><label>クライアント</label>
+      <select id="m-client">
+        <option value="TANZO">TANZO</option>
+        <option value="ateliertouca">ateliertouca</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>依頼内容</label><input id="m-title" placeholder="例：チラシ制作"></div>
+    <div class="modal-field"><label>受注日</label><input id="m-ordered" type="date" value="${todayStr()}"></div>
+    <div class="modal-field"><label>締め切り</label><input id="m-deadline" type="date"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-ok" onclick="doAddCommission()">追加</button>
+    </div>`);
+}
+
+function doAddCommission(){
+  const client = document.getElementById('m-client').value;
+  const title = document.getElementById('m-title').value.trim();
+  const ordered = document.getElementById('m-ordered').value;
+  const deadline = document.getElementById('m-deadline').value;
+  if(!title) return;
+  const id = 'comm'+Date.now();
+  DB.projects.push({
+    id, title:`${client}：${title}`, color: client==='TANZO'?'#6a8a5a':'#b07aa0',
+    deadline, duration:0, memo:'', collapsed:false,
+    orderedDate: ordered,
+    subtasks:[]
+  });
+  save(DB);
+  closeModal();
+  renderCommissions();
 }
 
 // ===================== アーカイブセクション =====================
