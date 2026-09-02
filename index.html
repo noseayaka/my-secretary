@@ -592,7 +592,11 @@ function renderToday(){
     </div>
     ${todayBlocks.map(b=>`<div class="task-item${b.done?' done':''}" style="cursor:pointer" onclick="openDetailFromToday('${b.id}','${b.projId||''}')">
       <input type="checkbox" class="task-check"${b.done?' checked':''} onclick="event.stopPropagation()" onchange="toggleBlock('${b.id}',this.checked)">
-      <span class="task-name${b.done?' done':''}">${b.title}${b.carriedOver?'<span style="font-size:0.65rem;background:#d4a843;color:#fff;border-radius:4px;padding:1px 5px;margin-left:5px">昨日から</span>':''} <span style="font-size:0.65rem;color:var(--muted)">${b.projTitle||''}</span></span>
+      <span class="task-name${b.done?' done':''}">
+        ${b.title}${b.carriedOver?'<span style="font-size:0.65rem;background:#d4a843;color:#fff;border-radius:4px;padding:1px 5px;margin-left:5px">昨日から</span>':''}
+        <span style="font-size:0.65rem;color:var(--muted);margin-left:6px">${b.projTitle||''}</span>
+        ${(b.startDate||b.endDate)?`<span style="font-size:0.62rem;color:var(--muted);margin-left:6px">${b.startDate?b.startDate.slice(5).replace('-','/'):''} ${b.endDate&&b.endDate!==b.startDate?'〜'+b.endDate.slice(5).replace('-','/'):''}${b.endDate===b.startDate?'(1日)':''}</span>`:''}
+      </span>
       ${b.duration?`<span class="task-duration">${Math.floor(b.duration/60)?Math.floor(b.duration/60)+'h':''} ${b.duration%60?b.duration%60+'m':''}</span>`:''}
       <button class="task-del" onclick="deleteBlock('${b.id}')">✕</button>
     </div>`).join('')}
