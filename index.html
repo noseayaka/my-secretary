@@ -529,7 +529,8 @@ function renderToday(){
   const todayBlocks=[...todayTasks.map(s=>({
     id:s.id,title:s.text,sub:s.id,done:s.done,
     duration:s.duration||0,projColor:s.projColor,projId:s.projId,isSub:true,
-    projTitle:s.projTitle,carriedOver:s.carriedOver
+    projTitle:s.projTitle,carriedOver:s.carriedOver,
+    startDate:s.startDate,endDate:s.endDate
   })),...manualBlocks];
 
   // 合計時間・完了時間
